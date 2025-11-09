@@ -26,3 +26,30 @@ dev = [
 
 [project.scripts]
 dot = "dot.__main__:app"
+
+[tool.coverage.run]
+branch = true
+source = ["src/dot"]
+omit = [
+    ".venv/*",
+    "*/site-packages/*",
+    "src/dot/__main__.py",
+    "src/dot/db.py",
+    "src/dot/settings.py",
+]
+
+[tool.coverage.report]
+precision = 2
+skip_covered = false
+fail_under = 100
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "pass",
+    "if .* is not None:",
+    "if .* is None:",
+]

@@ -11,3 +11,8 @@ wheels/
 
 # Pre-commit cache
 .pre-commit/
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/

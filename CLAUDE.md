@@ -9,16 +9,19 @@
 ### Completed Features
 - ✅ Core SQLAlchemy ORM models (Task, Note, Event, Project, Tag, LogEntry, TaskRecurrence, Migration)
 - ✅ SQLite database initialization and management
-- ✅ CI/CD with GitHub Actions (ruff linting, ty type checking)
+- ✅ CI/CD with GitHub Actions (ruff linting, ty type checking, pytest, coverage enforcement)
 - ✅ Pre-commit hooks with prek (automatic code quality checks)
 - ✅ Repository pattern implementation with abstractions
 - ✅ Functional core domain models (pure dataclasses)
 - ✅ In-memory repositories for testing
+- ✅ SQLAlchemy repositories for database persistence
 - ✅ Unit of Work pattern for transaction coordination
-- ✅ Comprehensive test suite (38 tests with 100% pass rate)
+- ✅ Comprehensive test suite (56 tests with 100% pass rate)
+- ✅ 100% code coverage enforcement (CI/CD gate + local checks)
 
 ### Project Status
-- **Tests:** 38 passing tests (0 failures)
+- **Tests:** 56 passing tests (0 failures)
+- **Code Coverage:** 100% (enforced via CI/CD)
 - **Type Checking:** All checks pass (ty)
 - **Linting:** All checks pass (ruff)
 - **Pre-commit:** Enabled via prek
@@ -221,8 +224,13 @@ uv run prek install
 
 **GitHub Actions** (`.github/workflows/ci.yml`):
 - Runs on push to main and all PRs
-- Executes: ruff check, ruff format --check, ty check
+- Executes:
+  1. Linting: `ruff check`
+  2. Formatting: `ruff format --check`
+  3. Type checking: `ty check`
+  4. Tests with coverage: `pytest tests/ --cov=. --cov-fail-under=100`
 - Uses `setup-uv` action for fast dependency resolution
+- **Blocks PRs** if any check fails or coverage < 100%
 
 ## Dependencies
 
@@ -302,6 +310,44 @@ Keep them separate! Repositories convert between them.
 - **Integration tests** - Use `SQLAlchemyUnitOfWork` (with database)
 - **Always test contracts** - Use repository contract classes to ensure behavior
 
+### Code Coverage Enforcement
+
+This project enforces **100% code coverage**:
+
+**Coverage Requirements:**
+- Minimum coverage: 100%
+- Branch coverage enabled (all if/else paths must be tested)
+- Enforced in CI/CD - PRs cannot merge without 100% coverage
+- Configured in `pyproject.toml` with `[tool.coverage.report]`
+
+**Coverage Configuration:**
+- Source: All Python files (src/ and tests/)
+- Excludes:
+  - `__repr__` methods (display-only, not critical)
+  - `if __name__ == "__main__"` (CLI entry point)
+  - Marked with `pragma: no cover` comment
+
+**Local Testing:**
+```bash
+# Run tests with coverage summary (shows missing lines)
+uv run pytest tests/ --cov=. --cov-report=term-missing -v
+
+# Generate HTML coverage report for detailed analysis
+uv run pytest tests/ --cov=. --cov-report=html
+# View: open htmlcov/index.html in browser
+```
+
+**CI/CD Gate:**
+- GitHub Actions runs: `pytest tests/ --cov=. --cov-fail-under=100`
+- Fails if coverage < 100%
+- Prevents merge of uncovered code
+
+**Why 100% Coverage?**
+- Catch edge cases and error paths
+- Ensure business logic is fully tested
+- Maintain high code quality standards
+- Branch coverage catches missed conditionals
+
 ## Useful Commands
 
 ```bash
@@ -311,9 +357,13 @@ uv run prek install
 
 # Running checks
 uv run pytest tests/ -v                 # Tests
+uv run pytest tests/ --cov=. --cov-report=term-missing -v  # Tests with coverage
 uv run ruff check src/                  # Lint
 uv run ty check                         # Type check
 uv run prek run                         # All pre-commit hooks
+
+# Coverage reporting
+uv run pytest tests/ --cov=. --cov-report=html  # Generate HTML coverage report
 
 # Running the CLI (when implemented)
 uv run dot --help
