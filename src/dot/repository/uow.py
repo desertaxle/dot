@@ -2,11 +2,18 @@
 
 from abc import ABC, abstractmethod
 
+from sqlalchemy.orm import Session
+
 from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
 from dot.repository.memory import (
     InMemoryEventRepository,
     InMemoryNoteRepository,
     InMemoryTaskRepository,
+)
+from dot.repository.sqlalchemy import (
+    SQLAlchemyEventRepository,
+    SQLAlchemyNoteRepository,
+    SQLAlchemyTaskRepository,
 )
 
 
@@ -89,3 +96,49 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
             self.commit()
         else:
             self.rollback()
+
+
+class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
+    """SQLAlchemy Unit of Work implementation for database persistence."""
+
+    def __init__(self, session: Session):
+        """Initialize with a database session.
+
+        Args:
+            session: SQLAlchemy session for database operations.
+        """
+        self.session = session
+        self._tasks = SQLAlchemyTaskRepository(session)
+        self._notes = SQLAlchemyNoteRepository(session)
+        self._events = SQLAlchemyEventRepository(session)
+
+    @property
+    def tasks(self) -> TaskRepository:
+        """Get the task repository."""
+        return self._tasks
+
+    @property
+    def notes(self) -> NoteRepository:
+        """Get the note repository."""
+        return self._notes
+
+    @property
+    def events(self) -> EventRepository:
+        """Get the event repository."""
+        return self._events
+
+    def commit(self) -> None:
+        """Commit the current transaction."""
+        self.session.commit()
+
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        self.session.rollback()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager."""
+        if exc_type is None:
+            self.commit()
+        else:
+            self.rollback()
+        self.session.close()
