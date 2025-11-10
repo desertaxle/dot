@@ -24,29 +24,29 @@ class AbstractUnitOfWork(ABC):
     @abstractmethod
     def tasks(self) -> TaskRepository:
         """Get the task repository."""
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
     def notes(self) -> NoteRepository:
         """Get the note repository."""
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
     def events(self) -> EventRepository:
         """Get the event repository."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def commit(self) -> None:
         """Commit the current transaction."""
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def rollback(self) -> None:
         """Rollback the current transaction."""
-        pass
+        pass  # pragma: no cover
 
     def __enter__(self):
         """Enter context manager."""
@@ -55,7 +55,7 @@ class AbstractUnitOfWork(ABC):
     @abstractmethod
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager."""
-        pass
+        pass  # pragma: no cover
 
 
 class InMemoryUnitOfWork(AbstractUnitOfWork):
@@ -94,14 +94,14 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
         """Exit context manager."""
         if exc_type is None:
             self.commit()
-        else:  # pragma: no cover
+        else:
             self.rollback()
 
 
-class SQLAlchemyUnitOfWork(AbstractUnitOfWork):  # pragma: no cover
+class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
     """SQLAlchemy Unit of Work implementation for database persistence."""
 
-    def __init__(self, session: Session):  # pragma: no cover
+    def __init__(self, session: Session):
         """Initialize with a database session.
 
         Args:
@@ -113,29 +113,29 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):  # pragma: no cover
         self._events = SQLAlchemyEventRepository(session)
 
     @property
-    def tasks(self) -> TaskRepository:  # pragma: no cover
+    def tasks(self) -> TaskRepository:
         """Get the task repository."""
         return self._tasks
 
     @property
-    def notes(self) -> NoteRepository:  # pragma: no cover
+    def notes(self) -> NoteRepository:
         """Get the note repository."""
         return self._notes
 
     @property
-    def events(self) -> EventRepository:  # pragma: no cover
+    def events(self) -> EventRepository:
         """Get the event repository."""
         return self._events
 
-    def commit(self) -> None:  # pragma: no cover
+    def commit(self) -> None:
         """Commit the current transaction."""
         self.session.commit()
 
-    def rollback(self) -> None:  # pragma: no cover
+    def rollback(self) -> None:
         """Rollback the current transaction."""
         self.session.rollback()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):  # pragma: no cover
+    def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager."""
         if exc_type is None:
             self.commit()

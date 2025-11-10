@@ -27,7 +27,7 @@ class InMemoryTaskRepository(TaskRepository):
 
     def update(self, task: Task) -> None:
         """Update an existing task."""
-        if task.id in self._tasks:  # pragma: no cover
+        if task.id in self._tasks:
             self._tasks[task.id] = task
 
     def delete(self, task_id: int) -> None:
@@ -56,7 +56,7 @@ class InMemoryNoteRepository(NoteRepository):
 
     def update(self, note: Note) -> None:
         """Update an existing note."""
-        if note.id in self._notes:  # pragma: no cover
+        if note.id in self._notes:
             self._notes[note.id] = note
 
     def delete(self, note_id: int) -> None:
@@ -85,7 +85,7 @@ class InMemoryEventRepository(EventRepository):
 
     def update(self, event: Event) -> None:
         """Update an existing event."""
-        if event.id in self._events:  # pragma: no cover
+        if event.id in self._events:
             self._events[event.id] = event
 
     def delete(self, event_id: int) -> None:

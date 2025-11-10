@@ -1,5 +1,9 @@
 # CLAUDE.md - Dot Project Guide for Claude Code
 
+## Agent Instructions
+
+**Before committing changes:** Update this file to reflect any architectural changes, new test files, or completed phases. Keep updates focused on structure and guidance for future agents, not implementation details.
+
 ## Project Overview
 
 **Dot** is a CLI bullet journal application for managing tasks, notes, and events with SQLite persistence. The project follows **architecture patterns from "Architecture Patterns with Python"** using a **functional core/imperative shell** approach.
@@ -15,13 +19,15 @@
 - ✅ Functional core domain models (pure dataclasses)
 - ✅ In-memory repositories for testing
 - ✅ SQLAlchemy repositories for database persistence
-- ✅ Unit of Work pattern for transaction coordination
-- ✅ Comprehensive test suite (56 tests with 100% pass rate)
+- ✅ Unit of Work pattern for transaction coordination (both in-memory and database)
+- ✅ Comprehensive test suite with 100% pass rate
 - ✅ 100% code coverage enforcement (CI/CD gate + local checks)
+- ✅ All warnings eliminated from test suite
+- ✅ Automatic coverage reporting on every pytest run
 
 ### Project Status
-- **Tests:** 56 passing tests (0 failures)
-- **Code Coverage:** 100% (enforced via CI/CD)
+- **Tests:** All passing with no warnings
+- **Code Coverage:** 100% (enforced via CI/CD + local pytest)
 - **Type Checking:** All checks pass (ty)
 - **Linting:** All checks pass (ruff)
 - **Pre-commit:** Enabled via prek
@@ -95,11 +101,13 @@ dot/
 ├── tests/
 │   ├── conftest.py             # Shared pytest fixtures
 │   ├── domain/
-│   │   └── test_models.py      # 11 domain model tests
+│   │   └── test_models.py      # Domain model tests
 │   ├── repository/
-│   │   ├── test_abstract.py    # Repository contract tests
-│   │   ├── test_memory.py      # In-memory implementation tests
-│   │   └── test_uow.py         # Unit of Work tests
+│   │   ├── test_abstract.py    # Repository contract tests (shared test interface)
+│   │   ├── test_memory.py      # In-memory repository tests + edge cases
+│   │   ├── test_sqlalchemy.py  # SQLAlchemy repository tests + edge cases
+│   │   └── test_uow.py         # Unit of Work tests (in-memory and SQLAlchemy)
+│   ├── test_orm_models.py      # ORM model __repr__ tests
 │   └── integration/            # Integration tests (placeholder)
 │
 ├── .github/workflows/
@@ -136,9 +144,10 @@ Pure dataclasses representing business entities:
 - Simple dict-based storage
 - Fast execution, no database setup needed
 
-**Next Phase - SQLAlchemy implementation** (`sqlalchemy.py` - TBD):
-- Will convert between domain models and SQLAlchemy ORM models
-- Use existing ORM models from `src/dot/models.py`
+**SQLAlchemy implementation** (`sqlalchemy.py` - ✅ Complete):
+- Converts between domain models and SQLAlchemy ORM models
+- Uses ORM models from `src/dot/models.py`
+- Tested with comprehensive edge cases
 
 ### Unit of Work (`src/dot/repository/uow.py`)
 
@@ -151,9 +160,9 @@ with InMemoryUnitOfWork() as uow:
 ```
 
 **Implementations:**
-- `AbstractUnitOfWork` - Interface/ABC
-- `InMemoryUnitOfWork` - For testing (complete)
-- `SQLAlchemyUnitOfWork` - For production (TBD)
+- `AbstractUnitOfWork` - Interface/ABC with abstract method stubs marked `pragma: no cover`
+- `InMemoryUnitOfWork` - For testing (✅ complete with full test coverage)
+- `SQLAlchemyUnitOfWork` - For production (✅ complete with full test coverage)
 
 ## Testing
 
@@ -172,19 +181,24 @@ uv run pytest tests/ --cov=src/dot --cov-report=html
 
 ### Test Organization
 
-- **Domain tests** (`tests/domain/`) - 11 tests
+- **Domain tests** (`tests/domain/test_models.py`)
   - Verify domain model structure and defaults
   - No dependencies on persistence
 
-- **Repository tests** (`tests/repository/`) - 18 tests
-  - Contract tests verify all repositories follow same interface
-  - Both memory and SQLAlchemy implementations tested
-  - Uses `TaskRepositoryContract`, `NoteRepositoryContract`, etc.
+- **Repository tests** (`tests/repository/`)
+  - `test_abstract.py` - Contract tests define the interface all repositories must follow
+  - `test_memory.py` - In-memory repository implementations + edge cases (non-existent updates)
+  - `test_sqlalchemy.py` - SQLAlchemy repository implementations + edge cases (non-existent updates)
+  - All use shared contract test classes (`TaskRepositoryContract`, etc.) for consistency
 
-- **Unit of Work tests** (`tests/repository/test_uow.py`) - 9 tests
-  - Verify context manager behavior
-  - Test transaction coordination
-  - Validate separate storage isolation
+- **Unit of Work tests** (`tests/repository/test_uow.py`)
+  - In-memory implementation: Context manager behavior, transaction coordination
+  - SQLAlchemy implementation: Database transaction behavior, rollback on exception
+  - Tests both implementations against the same interface
+
+- **ORM model tests** (`tests/test_orm_models.py`)
+  - Tests `__repr__()` methods for all SQLAlchemy ORM models
+  - Ensures proper string representation for debugging
 
 ### Test Fixtures
 
@@ -249,13 +263,15 @@ uv run prek install
 
 ## Next Steps / TODO
 
-### Phase 1: SQLAlchemy Repository (Next)
-- [ ] Create `src/dot/repository/sqlalchemy.py`
-- [ ] Implement `SQLAlchemyTaskRepository`
-- [ ] Implement `SQLAlchemyNoteRepository`
-- [ ] Implement `SQLAlchemyEventRepository`
-- [ ] Write tests in `tests/repository/test_sqlalchemy.py`
-- [ ] Implement `SQLAlchemyUnitOfWork`
+### Phase 1: SQLAlchemy Repository (✅ Complete)
+- [x] Create `src/dot/repository/sqlalchemy.py`
+- [x] Implement `SQLAlchemyTaskRepository`
+- [x] Implement `SQLAlchemyNoteRepository`
+- [x] Implement `SQLAlchemyEventRepository`
+- [x] Write tests in `tests/repository/test_sqlalchemy.py`
+- [x] Implement `SQLAlchemyUnitOfWork`
+- [x] Achieve 100% code coverage
+- [x] Fix all test warnings
 
 ### Phase 2: CLI Commands
 - [ ] Create command handlers for tasks
@@ -318,24 +334,29 @@ This project enforces **100% code coverage**:
 - Minimum coverage: 100%
 - Branch coverage enabled (all if/else paths must be tested)
 - Enforced in CI/CD - PRs cannot merge without 100% coverage
-- Configured in `pyproject.toml` with `[tool.coverage.report]`
+- Configured in `pyproject.toml` with `[tool.coverage.report]` and `[tool.pytest.ini_options]`
 
-**Coverage Configuration:**
-- Source: All Python files (src/ and tests/)
-- Excludes:
-  - `__repr__` methods (display-only, not critical)
-  - `if __name__ == "__main__"` (CLI entry point)
-  - Marked with `pragma: no cover` comment
+**Automatic Coverage on Every Run:**
+- Coverage runs automatically on every `uv run pytest` invocation
+- Configured in `pyproject.toml` under `[tool.pytest.ini_options]`
+- Generates both terminal output (with missing lines) and HTML report in `htmlcov/`
 
 **Local Testing:**
 ```bash
-# Run tests with coverage summary (shows missing lines)
-uv run pytest tests/ --cov=. --cov-report=term-missing -v
+# Coverage runs automatically
+uv run pytest tests/ -v
 
-# Generate HTML coverage report for detailed analysis
-uv run pytest tests/ --cov=. --cov-report=html
-# View: open htmlcov/index.html in browser
+# Or explicitly with custom options
+uv run pytest tests/ --cov=src/dot --cov-report=term-missing -v
+
+# View HTML coverage report
+open htmlcov/index.html
 ```
+
+**Abstract Methods and pragma: no cover:**
+- Abstract method stubs in `abstract.py` and `uow.py` are marked with `pragma: no cover`
+- These are interface definitions that cannot be executed - only their implementations are tested
+- This is correct practice for ABC (Abstract Base Class) patterns
 
 **CI/CD Gate:**
 - GitHub Actions runs: `pytest tests/ --cov=. --cov-fail-under=100`
