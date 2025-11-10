@@ -75,7 +75,7 @@
 
 4. **Test-Driven Development (TDD)**
    - Tests written before implementation
-   - Contract tests for repository behavior
+   - Contract tests for behavior
    - 100% pass rate across all test suites
 
 ## File Structure
