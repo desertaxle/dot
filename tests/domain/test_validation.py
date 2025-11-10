@@ -61,6 +61,13 @@ class TestTaskValidation:
         with pytest.raises(InvalidTaskError, match="priority must be 1-3"):
             validate_task(task)
 
+    def test_validate_invalid_task_status(self):
+        """Task with invalid status fails validation."""
+        task = Task(id=1, title="Test task")
+        task.status = "invalid"  # type: ignore
+        with pytest.raises(InvalidTaskError, match="Invalid task status"):
+            validate_task(task)
+
     def test_validate_dates_invalid_order(self):
         """Task with created_at > updated_at fails validation."""
         now = datetime.now(timezone.utc)

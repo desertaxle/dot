@@ -170,6 +170,20 @@ class TestAddToLog:
         assert entry.event_id == 5
         assert entry.log_id == 1
 
+    def test_add_note_to_log_specific_date(self):
+        """Add a note to a log with specific date."""
+        date = whenever.Date(2025, 1, 15)
+        entry = add_note_to_log(log_entry_id=10, log_id=1, note_id=5, entry_date=date)
+        assert entry.note_id == 5
+        assert entry.entry_date == date
+
+    def test_add_event_to_log_specific_date(self):
+        """Add an event to a log with specific date."""
+        date = whenever.Date(2025, 1, 15)
+        entry = add_event_to_log(log_entry_id=11, log_id=1, event_id=5, entry_date=date)
+        assert entry.event_id == 5
+        assert entry.entry_date == date
+
     def test_log_entries_are_unique(self):
         """Multiple log entries can have different items."""
         task_entry = add_task_to_log(log_entry_id=1, log_id=1, task_id=5)

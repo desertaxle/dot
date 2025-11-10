@@ -71,6 +71,12 @@ class TestGetNextOccurrence:
         prev_occ = get_previous_occurrence("0 9 * * *")
         assert prev_occ < now
 
+    def test_get_previous_occurrence_with_explicit_date(self):
+        """Get previous occurrence from an explicit date."""
+        start = whenever.Instant.now().add(seconds=86400 * 5)
+        prev_occ = get_previous_occurrence("0 9 * * *", start)
+        assert prev_occ < start
+
 
 class TestGenerateNextOccurrences:
     """Tests for generate_next_occurrences operation."""

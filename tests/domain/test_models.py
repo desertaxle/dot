@@ -2,8 +2,9 @@
 
 from datetime import datetime, timezone
 
+import whenever
 
-from dot.domain.models import Event, Note, Task, TaskStatus
+from dot.domain.models import Event, MonthlyLog, Note, Task, TaskStatus, WeeklyLog
 
 
 class TestTask:
@@ -173,3 +174,21 @@ class TestEvent:
         )
 
         assert event.occurred_at == past
+
+
+class TestLogDefaults:
+    """Tests for Log subclass default factories."""
+
+    def test_weekly_log_default_week_start(self):
+        """WeeklyLog without week_start uses current week."""
+        log = WeeklyLog(id=1, name="This Week")
+        assert log.week_start is not None
+        # Should be a Monday (day_of_week value = 1)
+        assert log.week_start.day_of_week().value == 1
+
+    def test_monthly_log_default_year_month(self):
+        """MonthlyLog without year/month uses current month."""
+        log = MonthlyLog(id=1, name="This Month")
+        today = whenever.Instant.now().to_system_tz().date()
+        assert log.year == today.year
+        assert log.month == today.month

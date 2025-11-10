@@ -1,6 +1,8 @@
 """Unit of Work pattern implementation."""
 
 from abc import ABC, abstractmethod
+from types import TracebackType
+from typing import Type
 
 from sqlalchemy.orm import Session
 
@@ -53,7 +55,12 @@ class AbstractUnitOfWork(ABC):
         return self
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         """Exit context manager."""
         pass  # pragma: no cover
 
@@ -90,7 +97,12 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
         """Rollback the current transaction (no-op for in-memory)."""
         pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
         """Exit context manager."""
         if exc_type is None:
             self.commit()
