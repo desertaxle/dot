@@ -6,15 +6,25 @@ from typing import Type
 
 from sqlalchemy.orm import Session
 
-from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
+from dot.repository.abstract import (
+    EventRepository,
+    LogEntryRepository,
+    NoteRepository,
+    ProjectRepository,
+    TaskRepository,
+)
 from dot.repository.memory import (
     InMemoryEventRepository,
+    InMemoryLogEntryRepository,
     InMemoryNoteRepository,
+    InMemoryProjectRepository,
     InMemoryTaskRepository,
 )
 from dot.repository.sqlalchemy import (
     SQLAlchemyEventRepository,
+    SQLAlchemyLogEntryRepository,
     SQLAlchemyNoteRepository,
+    SQLAlchemyProjectRepository,
     SQLAlchemyTaskRepository,
 )
 
@@ -38,6 +48,18 @@ class AbstractUnitOfWork(ABC):
     @abstractmethod
     def events(self) -> EventRepository:
         """Get the event repository."""
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
+    def projects(self) -> ProjectRepository:
+        """Get the project repository."""
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
+    def log_entries(self) -> LogEntryRepository:
+        """Get the log entry repository."""
         pass  # pragma: no cover
 
     @abstractmethod
@@ -73,6 +95,8 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
         self._tasks = InMemoryTaskRepository()
         self._notes = InMemoryNoteRepository()
         self._events = InMemoryEventRepository()
+        self._projects = InMemoryProjectRepository()
+        self._log_entries = InMemoryLogEntryRepository()
 
     @property
     def tasks(self) -> TaskRepository:
@@ -88,6 +112,16 @@ class InMemoryUnitOfWork(AbstractUnitOfWork):
     def events(self) -> EventRepository:
         """Get the event repository."""
         return self._events
+
+    @property
+    def projects(self) -> ProjectRepository:
+        """Get the project repository."""
+        return self._projects
+
+    @property
+    def log_entries(self) -> LogEntryRepository:
+        """Get the log entry repository."""
+        return self._log_entries
 
     def commit(self) -> None:
         """Commit the current transaction (no-op for in-memory)."""
@@ -123,6 +157,8 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
         self._tasks = SQLAlchemyTaskRepository(session)
         self._notes = SQLAlchemyNoteRepository(session)
         self._events = SQLAlchemyEventRepository(session)
+        self._projects = SQLAlchemyProjectRepository(session)
+        self._log_entries = SQLAlchemyLogEntryRepository(session)
 
     @property
     def tasks(self) -> TaskRepository:
@@ -138,6 +174,16 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
     def events(self) -> EventRepository:
         """Get the event repository."""
         return self._events
+
+    @property
+    def projects(self) -> ProjectRepository:
+        """Get the project repository."""
+        return self._projects
+
+    @property
+    def log_entries(self) -> LogEntryRepository:
+        """Get the log entry repository."""
+        return self._log_entries
 
     def commit(self) -> None:
         """Commit the current transaction."""

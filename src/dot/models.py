@@ -1,11 +1,22 @@
 """SQLAlchemy ORM models for the bullet journal application."""
 
+import enum
+from datetime import date as DateType
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-import enum
 
 
 class Base(DeclarativeBase):
@@ -89,6 +100,20 @@ class Project(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    # Log-specific fields (nullable for project type discrimination)
+    date: Mapped[Optional[DateType]] = mapped_column(
+        Date, nullable=True
+    )  # For DailyLog
+    week_start: Mapped[Optional[DateType]] = mapped_column(
+        Date, nullable=True
+    )  # For WeeklyLog
+    year: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )  # For MonthlyLog
+    month: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )  # For MonthlyLog
 
     # Relationships
     log_entries: Mapped[list["LogEntry"]] = relationship(

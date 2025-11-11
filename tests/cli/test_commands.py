@@ -1,6 +1,7 @@
 """Tests for CLI commands using cyclopts."""
 
 import pytest
+import whenever
 from unittest.mock import patch
 
 from dot.__main__ import app
@@ -776,3 +777,317 @@ class TestEventUpdateCommand:
             updated_event = mock_uow.events.get(1)
             assert updated_event is not None
             assert updated_event.content == "New content"
+
+
+class TestTaskAddCreatesLogEntry:
+    """Tests that task add automatically creates log entries."""
+
+    def test_add_task_creates_log_entry(self):
+        """Adding a task creates a log entry in today's daily log."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            app(["tasks", "add", "Buy milk"], result_action="return_value")
+
+            # Verify task was created
+            tasks = list(mock_uow.tasks.list())
+            assert len(tasks) == 1
+            task = tasks[0]
+
+            # Verify log entry was created
+            today = whenever.Instant.now().to_system_tz().date()
+            daily_log = mock_uow.projects.get_daily_log(today)
+            entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
+
+            assert len(entries) == 1
+            assert entries[0].task_id == task.id
+            assert entries[0].note_id is None
+            assert entries[0].event_id is None
+
+
+class TestNoteAddCreatesLogEntry:
+    """Tests that note add automatically creates log entries."""
+
+    def test_add_note_creates_log_entry(self):
+        """Adding a note creates a log entry in today's daily log."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            app(["notes", "add", "Important note"], result_action="return_value")
+
+            # Verify note was created
+            notes = list(mock_uow.notes.list())
+            assert len(notes) == 1
+            note = notes[0]
+
+            # Verify log entry was created
+            today = whenever.Instant.now().to_system_tz().date()
+            daily_log = mock_uow.projects.get_daily_log(today)
+            entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
+
+            assert len(entries) == 1
+            assert entries[0].task_id is None
+            assert entries[0].note_id == note.id
+            assert entries[0].event_id is None
+
+
+class TestEventAddCreatesLogEntry:
+    """Tests that event add automatically creates log entries."""
+
+    def test_add_event_creates_log_entry(self):
+        """Adding an event creates a log entry in the event's date daily log."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            event_date_str = "2024-01-15T10:00:00"
+            app(
+                ["events", "add", "Conference", "--date", event_date_str],
+                result_action="return_value",
+            )
+
+            # Verify event was created
+            events = list(mock_uow.events.list())
+            assert len(events) == 1
+            event = events[0]
+
+            # Verify log entry was created for the event's date
+            occurred_at = datetime.fromisoformat(event_date_str)
+            # Make timezone-aware
+            occurred_at = occurred_at.replace(tzinfo=datetime.now().astimezone().tzinfo)
+            event_date = (
+                whenever.Instant.from_py_datetime(occurred_at).to_system_tz().date()
+            )
+            daily_log = mock_uow.projects.get_daily_log(event_date)
+            entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
+
+            assert len(entries) == 1
+            assert entries[0].task_id is None
+            assert entries[0].note_id is None
+            assert entries[0].event_id == event.id
+
+
+class TestLogsShowCommand:
+    """Tests for the logs show command."""
+
+    def test_show_empty_log(self, capsys):
+        """Test showing a log with no entries."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "show"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Daily Log" in captured.out
+            assert "No entries" in captured.out
+
+    def test_show_log_with_task(self, capsys):
+        """Test showing a log with a task entry."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            # Create task and log entry
+            now = datetime.now(timezone.utc)
+            today = whenever.Instant.now().to_system_tz().date()
+
+            task = Task(id=1, title="Test task", created_at=now, updated_at=now)
+            mock_uow.tasks.add(task)
+            mock_uow.commit()
+
+            # Create log entry
+            daily_log = mock_uow.projects.get_daily_log(today)
+            from dot.domain.log_operations import LogEntry
+
+            log_entry = LogEntry(id=1, log_id=daily_log.id, task_id=1, entry_date=today)
+            mock_uow.log_entries.add(log_entry)
+            mock_uow.commit()
+
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "show"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Test task" in captured.out
+            assert "Task" in captured.out
+
+    def test_show_log_with_note(self, capsys):
+        """Test showing a log with a note entry."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            # Create note and log entry
+            now = datetime.now(timezone.utc)
+            today = whenever.Instant.now().to_system_tz().date()
+
+            note = Note(id=1, title="Test note", created_at=now, updated_at=now)
+            mock_uow.notes.add(note)
+            mock_uow.commit()
+
+            # Create log entry
+            daily_log = mock_uow.projects.get_daily_log(today)
+            from dot.domain.log_operations import LogEntry
+
+            log_entry = LogEntry(id=1, log_id=daily_log.id, note_id=1, entry_date=today)
+            mock_uow.log_entries.add(log_entry)
+            mock_uow.commit()
+
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "show"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Test note" in captured.out
+            assert "Note" in captured.out
+
+    def test_show_log_with_event(self, capsys):
+        """Test showing a log with an event entry."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            # Create event and log entry
+            now = datetime.now(timezone.utc)
+            today = whenever.Instant.now().to_system_tz().date()
+
+            event = Event(
+                id=1,
+                title="Test event",
+                occurred_at=now,
+                created_at=now,
+                updated_at=now,
+            )
+            mock_uow.events.add(event)
+            mock_uow.commit()
+
+            # Create log entry
+            daily_log = mock_uow.projects.get_daily_log(today)
+            from dot.domain.log_operations import LogEntry
+
+            log_entry = LogEntry(
+                id=1, log_id=daily_log.id, event_id=1, entry_date=today
+            )
+            mock_uow.log_entries.add(log_entry)
+            mock_uow.commit()
+
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "show"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Test event" in captured.out
+            assert "Event" in captured.out
+
+    def test_show_log_with_multiple_entries(self, capsys):
+        """Test showing a log with multiple entries."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            # Create items
+            now = datetime.now(timezone.utc)
+            today = whenever.Instant.now().to_system_tz().date()
+
+            task = Task(id=1, title="Test task", created_at=now, updated_at=now)
+            note = Note(id=1, title="Test note", created_at=now, updated_at=now)
+            mock_uow.tasks.add(task)
+            mock_uow.notes.add(note)
+            mock_uow.commit()
+
+            # Create log entries
+            daily_log = mock_uow.projects.get_daily_log(today)
+            from dot.domain.log_operations import LogEntry
+
+            log_entry1 = LogEntry(
+                id=1, log_id=daily_log.id, task_id=1, entry_date=today
+            )
+            log_entry2 = LogEntry(
+                id=2, log_id=daily_log.id, note_id=1, entry_date=today
+            )
+            mock_uow.log_entries.add(log_entry1)
+            mock_uow.log_entries.add(log_entry2)
+            mock_uow.commit()
+
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "show"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Test task" in captured.out
+            assert "Test note" in captured.out
+
+    def test_show_log_with_specific_date(self, capsys):
+        """Test showing a log for a specific date."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            # Use a specific date
+            specific_date = "2024-01-15"
+            app(["logs", "show", "--date", specific_date], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "2024-01-15" in captured.out
+
+
+class TestLogsTodayCommand:
+    """Tests for the logs today command."""
+
+    def test_today_shows_todays_log(self, capsys):
+        """Test that logs today shows today's log."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "today"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Daily Log" in captured.out
+
+    def test_today_with_entries(self, capsys):
+        """Test logs today with actual entries."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            # Create task and log entry
+            now = datetime.now(timezone.utc)
+            today = whenever.Instant.now().to_system_tz().date()
+
+            task = Task(id=1, title="Today's task", created_at=now, updated_at=now)
+            mock_uow.tasks.add(task)
+            mock_uow.commit()
+
+            # Create log entry
+            daily_log = mock_uow.projects.get_daily_log(today)
+            from dot.domain.log_operations import LogEntry
+
+            log_entry = LogEntry(id=1, log_id=daily_log.id, task_id=1, entry_date=today)
+            mock_uow.log_entries.add(log_entry)
+            mock_uow.commit()
+
+            mock_get_uow.return_value = mock_uow
+
+            app(["logs", "today"], result_action="return_value")
+            captured = capsys.readouterr()
+
+            assert "Today's task" in captured.out
+
+    def test_get_existing_daily_log(self):
+        """Test getting an existing daily log instead of creating new."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+
+            today = whenever.Instant.now().to_system_tz().date()
+
+            # Create a daily log
+            daily_log1 = mock_uow.projects.get_daily_log(today)
+            log1_id = daily_log1.id
+
+            # Get the same daily log again (should return existing)
+            daily_log2 = mock_uow.projects.get_daily_log(today)
+
+            # Should be the same log
+            assert daily_log2.id == log1_id
+            assert daily_log2.date == today
+
+            mock_get_uow.return_value = mock_uow

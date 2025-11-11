@@ -2,8 +2,17 @@
 
 from typing import Dict, List, Optional
 
-from dot.domain.models import Event, Note, Task
-from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
+import whenever
+
+from dot.domain.log_operations import LogEntry
+from dot.domain.models import DailyLog, Event, Note, Project, Task
+from dot.repository.abstract import (
+    EventRepository,
+    LogEntryRepository,
+    NoteRepository,
+    ProjectRepository,
+    TaskRepository,
+)
 
 
 class InMemoryTaskRepository(TaskRepository):
@@ -91,3 +100,90 @@ class InMemoryEventRepository(EventRepository):
     def delete(self, event_id: int) -> None:
         """Delete an event by ID."""
         self._events.pop(event_id, None)
+
+
+class InMemoryProjectRepository(ProjectRepository):
+    """In-memory implementation of ProjectRepository."""
+
+    def __init__(self):
+        """Initialize with empty storage."""
+        self._projects: Dict[int, Project] = {}
+        self._next_id = 1
+
+    def add(self, project: Project) -> None:
+        """Add a project to storage."""
+        # Assign ID if not set
+        project.id = self._next_id
+        self._next_id += 1
+        self._projects[project.id] = project
+
+    def get(self, project_id: int) -> Optional[Project]:
+        """Get a project by ID."""
+        return self._projects.get(project_id)
+
+    def list(self) -> List[Project]:
+        """List all projects."""
+        return list(self._projects.values())
+
+    def update(self, project: Project) -> None:
+        """Update an existing project."""
+        if project.id in self._projects:
+            self._projects[project.id] = project
+
+    def delete(self, project_id: int) -> None:
+        """Delete a project by ID."""
+        self._projects.pop(project_id, None)
+
+    def get_daily_log(self, log_date: whenever.Date) -> DailyLog:
+        """Get or create a daily log for the given date."""
+        # Search for existing daily log
+        for project in self._projects.values():
+            if (
+                isinstance(project, DailyLog) and project.date == log_date
+            ):  # pragma: no branch
+                return project
+
+        # Create new daily log
+        daily_log = DailyLog(
+            id=self._next_id,
+            name=f"Daily Log {log_date}",
+            date=log_date,
+        )
+        self._next_id += 1
+        self._projects[daily_log.id] = daily_log
+        return daily_log
+
+
+class InMemoryLogEntryRepository(LogEntryRepository):
+    """In-memory implementation of LogEntryRepository."""
+
+    def __init__(self):
+        """Initialize with empty storage."""
+        self._entries: Dict[int, LogEntry] = {}
+        self._next_id = 1
+
+    def add(self, log_entry: LogEntry) -> None:
+        """Add a log entry to storage."""
+        # Assign ID if not set
+        if log_entry.id == 0:
+            log_entry.id = self._next_id
+            self._next_id += 1
+        self._entries[log_entry.id] = log_entry
+
+    def get(self, entry_id: int) -> Optional[LogEntry]:
+        """Get a log entry by ID."""
+        return self._entries.get(entry_id)
+
+    def list(self) -> List[LogEntry]:
+        """List all log entries."""
+        return list(self._entries.values())
+
+    def delete(self, entry_id: int) -> None:
+        """Delete a log entry by ID."""
+        self._entries.pop(entry_id, None)
+
+    def get_by_log_id(self, log_id: int) -> List[LogEntry]:
+        """Get all log entries for a specific log."""
+        entries = [e for e in self._entries.values() if e.log_id == log_id]
+        # Sort chronologically
+        return sorted(entries, key=lambda e: e.entry_date)

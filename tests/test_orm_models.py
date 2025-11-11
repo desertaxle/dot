@@ -1,6 +1,6 @@
 """Tests for SQLAlchemy ORM model __repr__ methods."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 
 from dot.models import (
@@ -32,6 +32,66 @@ class TestProjectRepr:
         assert "id=1" in repr_str
         assert "Test Project" in repr_str
         assert "project" in repr_str
+
+
+class TestProjectLogFields:
+    """Test Project log-specific fields."""
+
+    def test_daily_log_with_date(self):
+        """Test that DailyLog project has date field."""
+        daily_log = Project(
+            id=1,
+            name="Daily Log",
+            type=ProjectType.DAILY_LOG,
+            date=date(2025, 11, 10),
+        )
+        assert daily_log.date == date(2025, 11, 10)
+        assert daily_log.type == ProjectType.DAILY_LOG
+
+    def test_daily_log_date_nullable(self):
+        """Test that date field is nullable."""
+        daily_log = Project(
+            id=1,
+            name="Daily Log",
+            type=ProjectType.DAILY_LOG,
+            date=None,
+        )
+        assert daily_log.date is None
+
+    def test_weekly_log_with_week_start(self):
+        """Test that WeeklyLog project has week_start field."""
+        weekly_log = Project(
+            id=2,
+            name="Weekly Log",
+            type=ProjectType.WEEKLY_LOG,
+            week_start=date(2025, 11, 10),  # Monday
+        )
+        assert weekly_log.week_start == date(2025, 11, 10)
+        assert weekly_log.type == ProjectType.WEEKLY_LOG
+
+    def test_monthly_log_with_year_month(self):
+        """Test that MonthlyLog project has year and month fields."""
+        monthly_log = Project(
+            id=3,
+            name="Monthly Log",
+            type=ProjectType.MONTHLY_LOG,
+            year=2025,
+            month=11,
+        )
+        assert monthly_log.year == 2025
+        assert monthly_log.month == 11
+        assert monthly_log.type == ProjectType.MONTHLY_LOG
+
+    def test_regular_project_without_log_fields(self):
+        """Test that regular project can be created without log fields."""
+        project = Project(
+            id=4,
+            name="Regular Project",
+            type=ProjectType.PROJECT,
+        )
+        assert project.type == ProjectType.PROJECT
+        # Log fields should be None or not cause errors
+        assert not hasattr(project, "date") or project.date is None
 
 
 class TestTaskRepr:

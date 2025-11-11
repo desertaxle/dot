@@ -43,6 +43,20 @@ class TestAbstractUnitOfWork:
         assert hasattr(uow, "events")
         assert uow.events is not None
 
+    def test_uow_has_project_repository(self):
+        """UnitOfWork provides access to project repository."""
+        uow = InMemoryUnitOfWork()
+
+        assert hasattr(uow, "projects")
+        assert uow.projects is not None
+
+    def test_uow_has_log_entry_repository(self):
+        """UnitOfWork provides access to log entry repository."""
+        uow = InMemoryUnitOfWork()
+
+        assert hasattr(uow, "log_entries")
+        assert uow.log_entries is not None
+
     def test_uow_commit(self):
         """UnitOfWork can commit changes."""
         uow = InMemoryUnitOfWork()
@@ -172,9 +186,13 @@ class TestSQLAlchemyUnitOfWork:
         assert hasattr(uow, "tasks")
         assert hasattr(uow, "notes")
         assert hasattr(uow, "events")
+        assert hasattr(uow, "projects")
+        assert hasattr(uow, "log_entries")
         assert uow.tasks is not None
         assert uow.notes is not None
         assert uow.events is not None
+        assert uow.projects is not None
+        assert uow.log_entries is not None
 
     def test_sqlalchemy_uow_commit(self, sqlalchemy_session: Session):
         """SQLAlchemyUnitOfWork can commit changes."""

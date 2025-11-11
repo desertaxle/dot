@@ -4,15 +4,19 @@ from datetime import datetime, timezone
 
 import pytest
 
-from dot.domain.models import Event, Note, Task, TaskStatus
+from dot.domain.models import Event, Note, Project, Task, TaskStatus
 from dot.repository.memory import (
     InMemoryEventRepository,
+    InMemoryLogEntryRepository,
     InMemoryNoteRepository,
+    InMemoryProjectRepository,
     InMemoryTaskRepository,
 )
 from tests.repository.test_abstract import (
     EventRepositoryContract,
+    LogEntryRepositoryContract,
     NoteRepositoryContract,
+    ProjectRepositoryContract,
     TaskRepositoryContract,
 )
 
@@ -103,4 +107,42 @@ class TestInMemoryEventRepositoryEdgeCases:
         repository.update(event)
 
         # Verify event was not added
+        assert repository.get(9999) is None
+
+
+class TestInMemoryProjectRepository(ProjectRepositoryContract):
+    """Test InMemoryProjectRepository against the contract."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Set up test repository."""
+        self.repository = InMemoryProjectRepository()
+
+
+class TestInMemoryLogEntryRepository(LogEntryRepositoryContract):
+    """Test InMemoryLogEntryRepository against the contract."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Set up test repository."""
+        self.repository = InMemoryLogEntryRepository()
+
+
+class TestInMemoryProjectRepositoryEdgeCases:
+    """Test edge cases for InMemoryProjectRepository."""
+
+    def test_update_nonexistent_project(self):
+        """Updating nonexistent project doesn't raise error."""
+        repository = InMemoryProjectRepository()
+        now = datetime.now(timezone.utc)
+        project = Project(
+            id=9999,
+            name="Nonexistent",
+            created_at=now,
+            updated_at=now,
+        )
+        # Should not raise
+        repository.update(project)
+
+        # Verify project was not added
         assert repository.get(9999) is None

@@ -4,11 +4,13 @@ import sys
 from datetime import datetime
 from typing import Optional
 
+import whenever
 from cyclopts import App
 
 from .db import get_database, init_database
+from .domain.log_operations import LogEntry
 from .domain.models import Event, Note, Task, TaskStatus
-from .repository.uow import SQLAlchemyUnitOfWork
+from .repository.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
 from .settings import settings
 
 # Initialize database
@@ -19,10 +21,12 @@ app = App()
 tasks_app = App(name="tasks", alias=("task", "t"))
 notes_app = App(name="notes", alias=("note", "n"))
 events_app = App(name="events", alias=("event", "e"))
+logs_app = App(name="logs", alias=("log", "l"))
 
 app.command(tasks_app)
 app.command(notes_app)
 app.command(events_app)
+app.command(logs_app)
 
 
 def get_uow() -> SQLAlchemyUnitOfWork:
@@ -30,6 +34,39 @@ def get_uow() -> SQLAlchemyUnitOfWork:
     db = get_database()
     session = next(db.get_session())
     return SQLAlchemyUnitOfWork(session)
+
+
+def add_to_daily_log(
+    uow: AbstractUnitOfWork,
+    item_date: whenever.Date,
+    task_id: int | None = None,
+    note_id: int | None = None,
+    event_id: int | None = None,
+) -> None:
+    """Add an item to the appropriate daily log.
+
+    Args:
+        uow: Unit of Work with access to repositories
+        item_date: Date for the daily log
+        task_id: ID of task to add (if task)
+        note_id: ID of note to add (if note)
+        event_id: ID of event to add (if event)
+    """
+    # Get or create daily log for the date
+    daily_log = uow.projects.get_daily_log(item_date)
+
+    # Create log entry
+    log_entry = LogEntry(
+        id=0,  # Will be assigned by repository
+        log_id=daily_log.id,
+        task_id=task_id,
+        note_id=note_id,
+        event_id=event_id,
+        entry_date=item_date,
+    )
+
+    # Add to repository
+    uow.log_entries.add(log_entry)
 
 
 # ===== TASK COMMANDS =====
@@ -47,7 +84,13 @@ def add(title: str, description: Optional[str] = None, priority: Optional[int] =
                 priority=priority,
             )
             uow.tasks.add(task)
+            uow.commit()  # Commit to get database-assigned ID
+
+            # Add to today's daily log
+            today = whenever.Instant.now().to_system_tz().date()
+            add_to_daily_log(uow, today, task_id=task.id)
             uow.commit()
+
             print(f"✓ Task created: {title}")
     except Exception as e:
         print(f"✗ Error creating task: {e}", file=sys.stderr)
@@ -206,7 +249,13 @@ def add(title: str, content: Optional[str] = None):  # noqa: F811
         with get_uow() as uow:
             note = Note(id=0, title=title, content=content)
             uow.notes.add(note)
+            uow.commit()  # Commit to get database-assigned ID
+
+            # Add to today's daily log
+            today = whenever.Instant.now().to_system_tz().date()
+            add_to_daily_log(uow, today, note_id=note.id)
             uow.commit()
+
             print(f"✓ Note created: {title}")
     except Exception as e:
         print(f"✗ Error creating note: {e}", file=sys.stderr)
@@ -304,10 +353,22 @@ def add(title: str, date: str, content: Optional[str] = None):  # noqa: F811
     """Add a new event."""
     try:
         occurred_at = datetime.fromisoformat(date)
+        # Ensure timezone-aware datetime
+        if occurred_at.tzinfo is None:
+            occurred_at = occurred_at.replace(tzinfo=datetime.now().astimezone().tzinfo)
+
         with get_uow() as uow:
             event = Event(id=0, title=title, occurred_at=occurred_at, content=content)
             uow.events.add(event)
+            uow.commit()  # Commit to get database-assigned ID
+
+            # Add to daily log for the event's date
+            event_date = (
+                whenever.Instant.from_py_datetime(occurred_at).to_system_tz().date()
+            )
+            add_to_daily_log(uow, event_date, event_id=event.id)
             uow.commit()
+
             print(f"✓ Event created: {title}")
     except ValueError:
         print(
@@ -396,7 +457,13 @@ def update(  # noqa: F811
             if title is not None:
                 event.title = title
             if date is not None:
-                event.occurred_at = datetime.fromisoformat(date)
+                occurred_at = datetime.fromisoformat(date)
+                # Ensure timezone-aware datetime
+                if occurred_at.tzinfo is None:
+                    occurred_at = occurred_at.replace(
+                        tzinfo=datetime.now().astimezone().tzinfo
+                    )
+                event.occurred_at = occurred_at
             if content is not None:
                 event.content = content
 
@@ -412,6 +479,117 @@ def update(  # noqa: F811
         sys.exit(1)
     except Exception as e:
         print(f"✗ Error updating event: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+# ===== LOG COMMANDS =====
+
+
+@logs_app.command
+def today():
+    """View today's daily log."""
+    try:
+        log_date = whenever.Instant.now().to_system_tz().date()
+
+        with get_uow() as uow:
+            # Get daily log (will auto-create if doesn't exist)
+            daily_log = uow.projects.get_daily_log(log_date)
+
+            # Get all log entries for this log
+            entries = uow.log_entries.get_by_log_id(daily_log.id)
+
+            # Display log header
+            print(f"\n=== Daily Log: {log_date} ===\n")
+
+            if not entries:
+                print("(No entries)")
+                return
+
+            # Display entries chronologically
+            for entry in entries:
+                if entry.task_id:
+                    task = uow.tasks.get(entry.task_id)
+                    if task:
+                        status_icon = (
+                            "✓"
+                            if task.status == TaskStatus.DONE
+                            else "✗"
+                            if task.status == TaskStatus.CANCELLED
+                            else "○"
+                        )
+                        print(f"{status_icon} Task: {task.title}")
+
+                elif entry.note_id:
+                    note = uow.notes.get(entry.note_id)
+                    if note:
+                        print(f"📝 Note: {note.title}")
+
+                elif entry.event_id:
+                    event = uow.events.get(entry.event_id)
+                    if event:
+                        print(f"📅 Event: {event.title}")
+
+            print()  # Blank line at end
+    except Exception as e:
+        print(f"✗ Error showing today's log: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+@logs_app.command
+def show(date: Optional[str] = None):  # noqa: F811
+    """View a daily log for a specific date.
+
+    Args:
+        date: Date in YYYY-MM-DD format (defaults to today)
+    """
+    try:
+        if date is None:
+            log_date = whenever.Instant.now().to_system_tz().date()
+        else:
+            # Parse date string (YYYY-MM-DD format)
+            log_date = whenever.Date.parse_iso(date)
+
+        with get_uow() as uow:
+            # Get daily log (will auto-create if doesn't exist)
+            daily_log = uow.projects.get_daily_log(log_date)
+
+            # Get all log entries for this log
+            entries = uow.log_entries.get_by_log_id(daily_log.id)
+
+            # Display log header
+            print(f"\n=== Daily Log: {log_date} ===\n")
+
+            if not entries:
+                print("(No entries)")
+                return
+
+            # Display entries chronologically
+            for entry in entries:
+                if entry.task_id:
+                    task = uow.tasks.get(entry.task_id)
+                    if task:
+                        status_icon = (
+                            "✓"
+                            if task.status == TaskStatus.DONE
+                            else "✗"
+                            if task.status == TaskStatus.CANCELLED
+                            else "○"
+                        )
+                        print(f"{status_icon} Task: {task.title}")
+
+                elif entry.note_id:
+                    note = uow.notes.get(entry.note_id)
+                    if note:
+                        print(f"📝 Note: {note.title}")
+
+                elif entry.event_id:
+                    event = uow.events.get(entry.event_id)
+                    if event:
+                        print(f"📅 Event: {event.title}")
+
+            print()  # Blank line at end
+    except Exception as e:
+        print(f"✗ Error showing log: {e}", file=sys.stderr)
         sys.exit(1)
 
 

@@ -6,16 +6,21 @@ import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from dot.domain.models import Event, Note, Task, TaskStatus
+
+from dot.domain.models import Event, Note, Project, Task, TaskStatus
 from dot.models import Base
 from dot.repository.sqlalchemy import (
     SQLAlchemyEventRepository,
+    SQLAlchemyLogEntryRepository,
     SQLAlchemyNoteRepository,
+    SQLAlchemyProjectRepository,
     SQLAlchemyTaskRepository,
 )
 from tests.repository.test_abstract import (
     EventRepositoryContract,
+    LogEntryRepositoryContract,
     NoteRepositoryContract,
+    ProjectRepositoryContract,
     TaskRepositoryContract,
 )
 
@@ -166,4 +171,61 @@ class TestSQLAlchemyEventRepositoryEdgeCases:
         self.repository.update(event)
 
         # Verify event was not added
+        assert self.repository.get(9999) is None
+
+
+class TestSQLAlchemyProjectRepository(ProjectRepositoryContract):
+    """Test SQLAlchemyProjectRepository against the contract."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, session: Session):
+        """Set up test repository."""
+        self.repository = SQLAlchemyProjectRepository(session)
+        self.session = session
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        self.session.rollback()
+
+
+class TestSQLAlchemyLogEntryRepository(LogEntryRepositoryContract):
+    """Test SQLAlchemyLogEntryRepository against the contract."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, session: Session):
+        """Set up test repository."""
+        self.repository = SQLAlchemyLogEntryRepository(session)
+        self.session = session
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        self.session.rollback()
+
+
+class TestSQLAlchemyProjectRepositoryEdgeCases:
+    """Test edge cases for SQLAlchemyProjectRepository."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, session: Session):
+        """Set up test repository."""
+        self.repository = SQLAlchemyProjectRepository(session)
+        self.session = session
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        self.session.rollback()
+
+    def test_update_nonexistent_project(self):
+        """Updating nonexistent project doesn't raise error."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            id=9999,
+            name="Nonexistent",
+            created_at=now,
+            updated_at=now,
+        )
+        # Should not raise
+        self.repository.update(project)
+
+        # Verify project was not added
         assert self.repository.get(9999) is None

@@ -2,9 +2,17 @@
 
 from datetime import datetime, timezone
 
+import whenever
 
-from dot.domain.models import Event, Note, Task, TaskStatus
-from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
+from dot.domain.log_operations import LogEntry
+from dot.domain.models import DailyLog, Event, Note, Project, Task, TaskStatus
+from dot.repository.abstract import (
+    EventRepository,
+    LogEntryRepository,
+    NoteRepository,
+    ProjectRepository,
+    TaskRepository,
+)
 
 
 class TaskRepositoryContract:
@@ -244,3 +252,187 @@ class EventRepositoryContract:
         """Deleting nonexistent event doesn't raise error."""
         # Should not raise
         self.repository.delete(9999)
+
+
+class ProjectRepositoryContract:
+    """Contract that all ProjectRepository implementations must follow."""
+
+    repository: ProjectRepository
+
+    def test_add_project(self):
+        """Repository can add a project."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            id=1,
+            name="Test Project",
+            description="A test project",
+            created_at=now,
+            updated_at=now,
+        )
+
+        self.repository.add(project)
+        retrieved = self.repository.get(1)
+
+        assert retrieved is not None
+        assert retrieved.id == 1
+        assert retrieved.name == "Test Project"
+
+    def test_get_nonexistent_project(self):
+        """Repository returns None for nonexistent project."""
+        result = self.repository.get(9999)
+        assert result is None
+
+    def test_list_projects(self):
+        """Repository can list all projects."""
+        now = datetime.now(timezone.utc)
+        project1 = Project(id=1, name="Project 1", created_at=now, updated_at=now)
+        project2 = Project(id=2, name="Project 2", created_at=now, updated_at=now)
+
+        self.repository.add(project1)
+        self.repository.add(project2)
+
+        projects = self.repository.list()
+        assert len(projects) == 2
+        assert any(p.id == 1 for p in projects)
+        assert any(p.id == 2 for p in projects)
+
+    def test_update_project(self):
+        """Repository can update a project."""
+        now = datetime.now(timezone.utc)
+        project = Project(id=1, name="Original", created_at=now, updated_at=now)
+
+        self.repository.add(project)
+
+        updated_project = Project(
+            id=1,
+            name="Updated",
+            description="Updated description",
+            created_at=now,
+            updated_at=now,
+        )
+        self.repository.update(updated_project)
+
+        retrieved = self.repository.get(1)
+        assert retrieved is not None
+        assert retrieved.name == "Updated"
+        assert retrieved.description == "Updated description"
+
+    def test_delete_project(self):
+        """Repository can delete a project."""
+        now = datetime.now(timezone.utc)
+        project = Project(id=1, name="To delete", created_at=now, updated_at=now)
+
+        self.repository.add(project)
+        assert self.repository.get(1) is not None
+
+        self.repository.delete(1)
+        assert self.repository.get(1) is None
+
+    def test_delete_nonexistent_project(self):
+        """Deleting nonexistent project doesn't raise error."""
+        # Should not raise
+        self.repository.delete(9999)
+
+    def test_get_daily_log_creates_if_not_exists(self):
+        """get_daily_log creates a daily log if it doesn't exist."""
+        today = whenever.Instant.now().to_system_tz().date()
+
+        daily_log = self.repository.get_daily_log(today)
+
+        assert daily_log is not None
+        assert isinstance(daily_log, DailyLog)
+        assert daily_log.date == today
+        assert daily_log.name == f"Daily Log {today}"
+
+    def test_get_daily_log_returns_existing(self):
+        """get_daily_log returns existing daily log for the date."""
+        today = whenever.Instant.now().to_system_tz().date()
+
+        # Create first time
+        daily_log1 = self.repository.get_daily_log(today)
+
+        # Get again - should return same log
+        daily_log2 = self.repository.get_daily_log(today)
+
+        assert daily_log1.id == daily_log2.id
+        assert daily_log1.date == daily_log2.date
+
+
+class LogEntryRepositoryContract:
+    """Contract that all LogEntryRepository implementations must follow."""
+
+    repository: LogEntryRepository
+
+    def test_add_log_entry(self):
+        """Repository can add a log entry."""
+        today = whenever.Instant.now().to_system_tz().date()
+        entry = LogEntry(
+            id=1,
+            log_id=1,
+            task_id=10,
+            note_id=None,
+            event_id=None,
+            entry_date=today,
+        )
+
+        self.repository.add(entry)
+        retrieved = self.repository.get(1)
+
+        assert retrieved is not None
+        assert retrieved.id == 1
+        assert retrieved.log_id == 1
+        assert retrieved.task_id == 10
+
+    def test_get_nonexistent_log_entry(self):
+        """Repository returns None for nonexistent log entry."""
+        result = self.repository.get(9999)
+        assert result is None
+
+    def test_list_log_entries(self):
+        """Repository can list all log entries."""
+        today = whenever.Instant.now().to_system_tz().date()
+        entry1 = LogEntry(id=1, log_id=1, task_id=10, entry_date=today)
+        entry2 = LogEntry(id=2, log_id=1, note_id=20, entry_date=today)
+
+        self.repository.add(entry1)
+        self.repository.add(entry2)
+
+        entries = self.repository.list()
+        assert len(entries) == 2
+        assert any(e.id == 1 for e in entries)
+        assert any(e.id == 2 for e in entries)
+
+    def test_delete_log_entry(self):
+        """Repository can delete a log entry."""
+        today = whenever.Instant.now().to_system_tz().date()
+        entry = LogEntry(id=1, log_id=1, task_id=10, entry_date=today)
+
+        self.repository.add(entry)
+        assert self.repository.get(1) is not None
+
+        self.repository.delete(1)
+        assert self.repository.get(1) is None
+
+    def test_delete_nonexistent_log_entry(self):
+        """Deleting nonexistent log entry doesn't raise error."""
+        # Should not raise
+        self.repository.delete(9999)
+
+    def test_get_by_log_id(self):
+        """Repository can get all entries for a specific log."""
+        today = whenever.Instant.now().to_system_tz().date()
+        entry1 = LogEntry(id=1, log_id=1, task_id=10, entry_date=today)
+        entry2 = LogEntry(id=2, log_id=1, note_id=20, entry_date=today)
+        entry3 = LogEntry(id=3, log_id=2, event_id=30, entry_date=today)
+
+        self.repository.add(entry1)
+        self.repository.add(entry2)
+        self.repository.add(entry3)
+
+        log1_entries = self.repository.get_by_log_id(1)
+        assert len(log1_entries) == 2
+        assert all(e.log_id == 1 for e in log1_entries)
+
+        log2_entries = self.repository.get_by_log_id(2)
+        assert len(log2_entries) == 1
+        assert log2_entries[0].log_id == 2
