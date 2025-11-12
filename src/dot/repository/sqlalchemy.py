@@ -2,6 +2,7 @@
 
 from datetime import date, datetime, timezone
 from typing import List, Optional
+from uuid import UUID, uuid7
 
 import whenever
 from sqlalchemy.orm import Session
@@ -34,22 +35,25 @@ class SQLAlchemyTaskRepository(TaskRepository):
     def _domain_to_orm(self, task: Task) -> OrmTask:
         """Convert domain Task to ORM Task."""
         orm_status = OrmTaskStatus(task.status.value)
-        orm_task = OrmTask(
-            id=task.id,
-            title=task.title,
-            description=task.description,
-            status=orm_status,
-            priority=task.priority,
-            created_at=task.created_at,
-            updated_at=task.updated_at,
-        )
+        kwargs = {
+            "title": task.title,
+            "description": task.description,
+            "status": orm_status,
+            "priority": task.priority,
+            "created_at": task.created_at,
+            "updated_at": task.updated_at,
+        }
+        # Only set ID if it exists (for updates), convert UUID to string
+        if task.id is not None:
+            kwargs["id"] = str(task.id)
+        orm_task = OrmTask(**kwargs)
         return orm_task
 
     def _orm_to_domain(self, orm_task: OrmTask) -> Task:
         """Convert ORM Task to domain Task."""
         domain_status = TaskStatus(orm_task.status.value)
         task = Task(
-            id=orm_task.id,
+            id=UUID(orm_task.id),
             title=orm_task.title,
             description=orm_task.description,
             status=domain_status,
@@ -61,13 +65,18 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
     def add(self, task: Task) -> None:
         """Add a task to the database."""
+        # Generate UUID if not set
+        if task.id is None:
+            task.id = uuid7()
         orm_task = self._domain_to_orm(task)
         self.session.add(orm_task)
         self.session.flush()
 
-    def get(self, task_id: int) -> Optional[Task]:
+    def get(self, task_id: UUID) -> Optional[Task]:
         """Get a task by ID from the database."""
-        orm_task = self.session.query(OrmTask).filter(OrmTask.id == task_id).first()
+        orm_task = (
+            self.session.query(OrmTask).filter(OrmTask.id == str(task_id)).first()
+        )
         if orm_task is None:
             return None
         return self._orm_to_domain(orm_task)
@@ -79,7 +88,9 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
     def update(self, task: Task) -> None:
         """Update an existing task in the database."""
-        orm_task = self.session.query(OrmTask).filter(OrmTask.id == task.id).first()
+        orm_task = (
+            self.session.query(OrmTask).filter(OrmTask.id == str(task.id)).first()
+        )
         if orm_task is not None:
             orm_task.title = task.title
             orm_task.description = task.description
@@ -88,9 +99,11 @@ class SQLAlchemyTaskRepository(TaskRepository):
             orm_task.updated_at = task.updated_at
             self.session.flush()
 
-    def delete(self, task_id: int) -> None:
+    def delete(self, task_id: UUID) -> None:
         """Delete a task from the database."""
-        orm_task = self.session.query(OrmTask).filter(OrmTask.id == task_id).first()
+        orm_task = (
+            self.session.query(OrmTask).filter(OrmTask.id == str(task_id)).first()
+        )
         if orm_task is not None:
             self.session.delete(orm_task)
             self.session.flush()
@@ -105,19 +118,22 @@ class SQLAlchemyNoteRepository(NoteRepository):
 
     def _domain_to_orm(self, note: Note) -> OrmNote:
         """Convert domain Note to ORM Note."""
-        orm_note = OrmNote(
-            id=note.id,
-            title=note.title,
-            content=note.content,
-            created_at=note.created_at,
-            updated_at=note.updated_at,
-        )
+        kwargs = {
+            "title": note.title,
+            "content": note.content,
+            "created_at": note.created_at,
+            "updated_at": note.updated_at,
+        }
+        # Only set ID if it exists (for updates), convert UUID to string
+        if note.id is not None:
+            kwargs["id"] = str(note.id)
+        orm_note = OrmNote(**kwargs)
         return orm_note
 
     def _orm_to_domain(self, orm_note: OrmNote) -> Note:
         """Convert ORM Note to domain Note."""
         note = Note(
-            id=orm_note.id,
+            id=UUID(orm_note.id),
             title=orm_note.title,
             content=orm_note.content,
             created_at=orm_note.created_at,
@@ -127,13 +143,18 @@ class SQLAlchemyNoteRepository(NoteRepository):
 
     def add(self, note: Note) -> None:
         """Add a note to the database."""
+        # Generate UUID if not set
+        if note.id is None:
+            note.id = uuid7()
         orm_note = self._domain_to_orm(note)
         self.session.add(orm_note)
         self.session.flush()
 
-    def get(self, note_id: int) -> Optional[Note]:
+    def get(self, note_id: UUID) -> Optional[Note]:
         """Get a note by ID from the database."""
-        orm_note = self.session.query(OrmNote).filter(OrmNote.id == note_id).first()
+        orm_note = (
+            self.session.query(OrmNote).filter(OrmNote.id == str(note_id)).first()
+        )
         if orm_note is None:
             return None
         return self._orm_to_domain(orm_note)
@@ -145,16 +166,20 @@ class SQLAlchemyNoteRepository(NoteRepository):
 
     def update(self, note: Note) -> None:
         """Update an existing note in the database."""
-        orm_note = self.session.query(OrmNote).filter(OrmNote.id == note.id).first()
+        orm_note = (
+            self.session.query(OrmNote).filter(OrmNote.id == str(note.id)).first()
+        )
         if orm_note is not None:
             orm_note.title = note.title
             orm_note.content = note.content
             orm_note.updated_at = note.updated_at
             self.session.flush()
 
-    def delete(self, note_id: int) -> None:
+    def delete(self, note_id: UUID) -> None:
         """Delete a note from the database."""
-        orm_note = self.session.query(OrmNote).filter(OrmNote.id == note_id).first()
+        orm_note = (
+            self.session.query(OrmNote).filter(OrmNote.id == str(note_id)).first()
+        )
         if orm_note is not None:
             self.session.delete(orm_note)
             self.session.flush()
@@ -169,20 +194,23 @@ class SQLAlchemyEventRepository(EventRepository):
 
     def _domain_to_orm(self, event: Event) -> OrmEvent:
         """Convert domain Event to ORM Event."""
-        orm_event = OrmEvent(
-            id=event.id,
-            title=event.title,
-            content=event.content,
-            occurred_at=event.occurred_at,
-            created_at=event.created_at,
-            updated_at=event.updated_at,
-        )
+        kwargs = {
+            "title": event.title,
+            "content": event.content,
+            "occurred_at": event.occurred_at,
+            "created_at": event.created_at,
+            "updated_at": event.updated_at,
+        }
+        # Only set ID if it exists (for updates), convert UUID to string
+        if event.id is not None:
+            kwargs["id"] = str(event.id)
+        orm_event = OrmEvent(**kwargs)
         return orm_event
 
     def _orm_to_domain(self, orm_event: OrmEvent) -> Event:
         """Convert ORM Event to domain Event."""
         event = Event(
-            id=orm_event.id,
+            id=UUID(orm_event.id),
             title=orm_event.title,
             content=orm_event.content,
             occurred_at=orm_event.occurred_at,
@@ -193,13 +221,18 @@ class SQLAlchemyEventRepository(EventRepository):
 
     def add(self, event: Event) -> None:
         """Add an event to the database."""
+        # Generate UUID if not set
+        if event.id is None:
+            event.id = uuid7()
         orm_event = self._domain_to_orm(event)
         self.session.add(orm_event)
         self.session.flush()
 
-    def get(self, event_id: int) -> Optional[Event]:
+    def get(self, event_id: UUID) -> Optional[Event]:
         """Get an event by ID from the database."""
-        orm_event = self.session.query(OrmEvent).filter(OrmEvent.id == event_id).first()
+        orm_event = (
+            self.session.query(OrmEvent).filter(OrmEvent.id == str(event_id)).first()
+        )
         if orm_event is None:
             return None
         return self._orm_to_domain(orm_event)
@@ -211,7 +244,9 @@ class SQLAlchemyEventRepository(EventRepository):
 
     def update(self, event: Event) -> None:
         """Update an existing event in the database."""
-        orm_event = self.session.query(OrmEvent).filter(OrmEvent.id == event.id).first()
+        orm_event = (
+            self.session.query(OrmEvent).filter(OrmEvent.id == str(event.id)).first()
+        )
         if orm_event is not None:
             orm_event.title = event.title
             orm_event.content = event.content
@@ -219,9 +254,11 @@ class SQLAlchemyEventRepository(EventRepository):
             orm_event.updated_at = event.updated_at
             self.session.flush()
 
-    def delete(self, event_id: int) -> None:
+    def delete(self, event_id: UUID) -> None:
         """Delete an event from the database."""
-        orm_event = self.session.query(OrmEvent).filter(OrmEvent.id == event_id).first()
+        orm_event = (
+            self.session.query(OrmEvent).filter(OrmEvent.id == str(event_id)).first()
+        )
         if orm_event is not None:
             self.session.delete(orm_event)
             self.session.flush()
@@ -248,18 +285,21 @@ class SQLAlchemyProjectRepository(ProjectRepository):
             # Convert whenever.Date to Python date
             date_field = date(project.date.year, project.date.month, project.date.day)
 
-        orm_project = OrmProject(
-            id=project.id,
-            name=project.name,
-            description=project.description,
-            type=project_type,
-            date=date_field,
-            week_start=week_start_field,
-            year=year_field,
-            month=month_field,
-            created_at=project.created_at,
-            updated_at=project.updated_at,
-        )
+        kwargs = {
+            "name": project.name,
+            "description": project.description,
+            "type": project_type,
+            "date": date_field,
+            "week_start": week_start_field,
+            "year": year_field,
+            "month": month_field,
+            "created_at": project.created_at,
+            "updated_at": project.updated_at,
+        }
+        # Only set ID if it exists (for updates), convert UUID to string
+        if project.id is not None:
+            kwargs["id"] = str(project.id)
+        orm_project = OrmProject(**kwargs)
         return orm_project
 
     def _orm_to_domain(self, orm_project: OrmProject) -> Project:
@@ -276,7 +316,7 @@ class SQLAlchemyProjectRepository(ProjectRepository):
                 orm_project.date.day,
             )
             return DailyLog(
-                id=orm_project.id,
+                id=UUID(orm_project.id),
                 name=orm_project.name,
                 description=orm_project.description,
                 date=whenever_date,
@@ -286,7 +326,7 @@ class SQLAlchemyProjectRepository(ProjectRepository):
         else:
             # Regular project
             return Project(
-                id=orm_project.id,
+                id=UUID(orm_project.id),
                 name=orm_project.name,
                 description=orm_project.description,
                 created_at=orm_project.created_at,
@@ -295,17 +335,19 @@ class SQLAlchemyProjectRepository(ProjectRepository):
 
     def add(self, project: Project) -> None:
         """Add a project to the database."""
+        # Generate UUID if not set
+        if project.id is None:
+            project.id = uuid7()
         orm_project = self._domain_to_orm(project)
-        # If id is 0, don't set it - let database auto-generate
         self.session.add(orm_project)
         self.session.flush()
-        # Update domain object with database-assigned ID
-        project.id = orm_project.id
 
-    def get(self, project_id: int) -> Optional[Project]:
+    def get(self, project_id: UUID) -> Optional[Project]:
         """Get a project by ID from the database."""
         orm_project = (
-            self.session.query(OrmProject).filter(OrmProject.id == project_id).first()
+            self.session.query(OrmProject)
+            .filter(OrmProject.id == str(project_id))
+            .first()
         )
         if orm_project is None:
             return None
@@ -319,7 +361,9 @@ class SQLAlchemyProjectRepository(ProjectRepository):
     def update(self, project: Project) -> None:
         """Update an existing project in the database."""
         orm_project = (
-            self.session.query(OrmProject).filter(OrmProject.id == project.id).first()
+            self.session.query(OrmProject)
+            .filter(OrmProject.id == str(project.id))
+            .first()
         )
         if orm_project is not None:
             orm_project.name = project.name
@@ -328,10 +372,12 @@ class SQLAlchemyProjectRepository(ProjectRepository):
 
             self.session.flush()
 
-    def delete(self, project_id: int) -> None:
+    def delete(self, project_id: UUID) -> None:
         """Delete a project from the database."""
         orm_project = (
-            self.session.query(OrmProject).filter(OrmProject.id == project_id).first()
+            self.session.query(OrmProject)
+            .filter(OrmProject.id == str(project_id))
+            .first()
         )
         if orm_project is not None:
             self.session.delete(orm_project)
@@ -358,20 +404,17 @@ class SQLAlchemyProjectRepository(ProjectRepository):
         # Create new daily log
         now = datetime.now(timezone.utc)
         daily_log = DailyLog(
-            id=0,  # Will be assigned by database
             name=f"Daily Log {log_date}",
             date=log_date,
             created_at=now,
             updated_at=now,
         )
 
-        # Add to database
+        # Generate UUID and add to database
+        daily_log.id = uuid7()
         orm_daily_log = self._domain_to_orm(daily_log)
         self.session.add(orm_daily_log)
         self.session.flush()
-
-        # Update domain object with assigned ID
-        daily_log.id = orm_daily_log.id
         return daily_log
 
 
@@ -392,14 +435,19 @@ class SQLAlchemyLogEntryRepository(LogEntryRepository):
             tzinfo=timezone.utc,
         )
 
-        orm_log_entry = OrmLogEntry(
-            id=log_entry.id,
-            project_id=log_entry.log_id,  # Domain uses log_id, ORM uses project_id
-            task_id=log_entry.task_id,
-            note_id=log_entry.note_id,
-            event_id=log_entry.event_id,
-            entry_date=entry_datetime,
-        )
+        kwargs = {
+            "project_id": str(
+                log_entry.log_id
+            ),  # Domain uses log_id, ORM uses project_id, convert UUID to string
+            "task_id": str(log_entry.task_id) if log_entry.task_id else None,
+            "note_id": str(log_entry.note_id) if log_entry.note_id else None,
+            "event_id": str(log_entry.event_id) if log_entry.event_id else None,
+            "entry_date": entry_datetime,
+        }
+        # Only set ID if it exists (for updates), convert UUID to string
+        if log_entry.id is not None:
+            kwargs["id"] = str(log_entry.id)
+        orm_log_entry = OrmLogEntry(**kwargs)
         return orm_log_entry
 
     def _orm_to_domain(self, orm_log_entry: OrmLogEntry) -> LogEntry:
@@ -412,25 +460,32 @@ class SQLAlchemyLogEntryRepository(LogEntryRepository):
         )
 
         log_entry = LogEntry(
-            id=orm_log_entry.id,
-            log_id=orm_log_entry.project_id,  # ORM uses project_id, domain uses log_id
-            task_id=orm_log_entry.task_id,
-            note_id=orm_log_entry.note_id,
-            event_id=orm_log_entry.event_id,
+            id=UUID(orm_log_entry.id),
+            log_id=UUID(
+                orm_log_entry.project_id
+            ),  # ORM uses project_id, domain uses log_id
+            task_id=UUID(orm_log_entry.task_id) if orm_log_entry.task_id else None,
+            note_id=UUID(orm_log_entry.note_id) if orm_log_entry.note_id else None,
+            event_id=UUID(orm_log_entry.event_id) if orm_log_entry.event_id else None,
             entry_date=entry_date,
         )
         return log_entry
 
     def add(self, log_entry: LogEntry) -> None:
         """Add a log entry to the database."""
+        # Generate UUID if not set
+        if log_entry.id is None:
+            log_entry.id = uuid7()
         orm_log_entry = self._domain_to_orm(log_entry)
         self.session.add(orm_log_entry)
         self.session.flush()
 
-    def get(self, entry_id: int) -> Optional[LogEntry]:
+    def get(self, entry_id: UUID) -> Optional[LogEntry]:
         """Get a log entry by ID from the database."""
         orm_log_entry = (
-            self.session.query(OrmLogEntry).filter(OrmLogEntry.id == entry_id).first()
+            self.session.query(OrmLogEntry)
+            .filter(OrmLogEntry.id == str(entry_id))
+            .first()
         )
         if orm_log_entry is None:
             return None
@@ -441,20 +496,22 @@ class SQLAlchemyLogEntryRepository(LogEntryRepository):
         orm_log_entries = self.session.query(OrmLogEntry).all()
         return [self._orm_to_domain(orm_log_entry) for orm_log_entry in orm_log_entries]
 
-    def delete(self, entry_id: int) -> None:
+    def delete(self, entry_id: UUID) -> None:
         """Delete a log entry from the database."""
         orm_log_entry = (
-            self.session.query(OrmLogEntry).filter(OrmLogEntry.id == entry_id).first()
+            self.session.query(OrmLogEntry)
+            .filter(OrmLogEntry.id == str(entry_id))
+            .first()
         )
         if orm_log_entry is not None:
             self.session.delete(orm_log_entry)
             self.session.flush()
 
-    def get_by_log_id(self, log_id: int) -> List[LogEntry]:
+    def get_by_log_id(self, log_id: UUID) -> List[LogEntry]:
         """Get all log entries for a specific log."""
         orm_log_entries = (
             self.session.query(OrmLogEntry)
-            .filter(OrmLogEntry.project_id == log_id)
+            .filter(OrmLogEntry.project_id == str(log_id))
             .order_by(OrmLogEntry.entry_date)
             .all()
         )

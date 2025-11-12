@@ -3,6 +3,7 @@
 import sys
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 import whenever
 from cyclopts import App
@@ -10,6 +11,18 @@ from cyclopts import App
 from .db import get_database, init_database
 from .domain.log_operations import LogEntry
 from .domain.models import Event, Note, Task, TaskStatus
+from .output import (
+    build_event_detail_panel,
+    build_event_tree,
+    build_log_tree,
+    build_note_detail_panel,
+    build_note_tree,
+    build_task_detail_panel,
+    build_task_tree,
+    console,
+    print_error,
+    print_success,
+)
 from .repository.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
 from .settings import settings
 
@@ -39,9 +52,9 @@ def get_uow() -> SQLAlchemyUnitOfWork:
 def add_to_daily_log(
     uow: AbstractUnitOfWork,
     item_date: whenever.Date,
-    task_id: int | None = None,
-    note_id: int | None = None,
-    event_id: int | None = None,
+    task_id: UUID | None = None,
+    note_id: UUID | None = None,
+    event_id: UUID | None = None,
 ) -> None:
     """Add an item to the appropriate daily log.
 
@@ -55,9 +68,11 @@ def add_to_daily_log(
     # Get or create daily log for the date
     daily_log = uow.projects.get_daily_log(item_date)
 
+    # ID should always be set after get_daily_log
+    assert daily_log.id is not None
+
     # Create log entry
     log_entry = LogEntry(
-        id=0,  # Will be assigned by repository
         log_id=daily_log.id,
         task_id=task_id,
         note_id=note_id,
@@ -78,7 +93,6 @@ def add(title: str, description: Optional[str] = None, priority: Optional[int] =
     try:
         with get_uow() as uow:
             task = Task(
-                id=0,  # ID will be assigned by the database
                 title=title,
                 description=description,
                 priority=priority,
@@ -91,9 +105,9 @@ def add(title: str, description: Optional[str] = None, priority: Optional[int] =
             add_to_daily_log(uow, today, task_id=task.id)
             uow.commit()
 
-            print(f"✓ Task created: {title}")
+            print_success(f"Task created: {title}")
     except Exception as e:
-        print(f"✗ Error creating task: {e}", file=sys.stderr)
+        print_error(f"Error creating task: {e}")
         sys.exit(1)
 
 
@@ -104,113 +118,92 @@ def list(all: bool = False):  # noqa: A001, F811
         with get_uow() as uow:
             task_list = uow.tasks.list()
 
-            if not all:
-                task_list = [t for t in task_list if t.status != TaskStatus.CANCELLED]
-
-            if not task_list:
-                print("No tasks found.")
-                return
-
-            for task in task_list:
-                status_symbol = (
-                    "✓"
-                    if task.status == TaskStatus.DONE
-                    else "✗"
-                    if task.status == TaskStatus.CANCELLED
-                    else "○"
-                )
-                priority_str = f" [P{task.priority}]" if task.priority else ""
-                print(f"{status_symbol} ({task.id}) {task.title}{priority_str}")
+            tree = build_task_tree(task_list, show_cancelled=all)
+            console.print(tree)
     except Exception as e:
-        print(f"✗ Error listing tasks: {e}", file=sys.stderr)
+        print_error(f"Error listing tasks: {e}")
         sys.exit(1)
 
 
 @tasks_app.command
-def show(task_id: int):  # noqa: F811
+def show(task_id: str):  # noqa: F811
     """Show task details."""
     try:
         with get_uow() as uow:
-            task = uow.tasks.get(task_id)
+            task = uow.tasks.get(UUID(task_id))
             if not task:
-                print(f"✗ Task {task_id} not found.", file=sys.stderr)
+                print_error(f"Task {task_id} not found.")
                 sys.exit(1)
 
-            print(f"Task: {task.title}")
-            print(f"ID: {task.id}")
-            print(f"Status: {task.status.value}")
-            if task.description:
-                print(f"Description: {task.description}")
-            if task.priority:
-                print(f"Priority: {task.priority}")
-            print(f"Created: {task.created_at}")
-            print(f"Updated: {task.updated_at}")
+            panel = build_task_detail_panel(task)
+            console.print(panel)
     except Exception as e:
-        print(f"✗ Error showing task: {e}", file=sys.stderr)
+        print_error(f"Error showing task: {e}")
         sys.exit(1)
 
 
 @tasks_app.command
-def done(task_id: int):
+def done(task_id: str):
     """Mark a task as done."""
     try:
         with get_uow() as uow:
-            task = uow.tasks.get(task_id)
+            task = uow.tasks.get(UUID(task_id))
             if not task:
-                print(f"✗ Task {task_id} not found.", file=sys.stderr)
+                print_error(f"Task {task_id} not found.")
                 sys.exit(1)
 
             task.status = TaskStatus.DONE
             task.updated_at = datetime.now(datetime.now().astimezone().tzinfo)
             uow.tasks.update(task)
             uow.commit()
-            print(f"✓ Task marked as done: {task.title}")
+            print_success(f"Task marked as done: {task.title}")
     except Exception as e:
-        print(f"✗ Error marking task done: {e}", file=sys.stderr)
+        print_error(f"Error marking task done: {e}")
         sys.exit(1)
 
 
 @tasks_app.command
-def cancel(task_id: int):
+def cancel(task_id: str):
     """Cancel a task (strike it without deleting)."""
     try:
         with get_uow() as uow:
-            task = uow.tasks.get(task_id)
+            task = uow.tasks.get(UUID(task_id))
             if not task:
-                print(f"✗ Task {task_id} not found.", file=sys.stderr)
+                print_error(f"Task {task_id} not found.")
                 sys.exit(1)
 
             task.status = TaskStatus.CANCELLED
             task.updated_at = datetime.now(datetime.now().astimezone().tzinfo)
             uow.tasks.update(task)
             uow.commit()
-            print(f"✓ Task cancelled: {task.title}")
+            print_success(f"Task cancelled: {task.title}")
     except Exception as e:
-        print(f"✗ Error cancelling task: {e}", file=sys.stderr)
+        print_error(f"Error cancelling task: {e}")
         sys.exit(1)
 
 
 @tasks_app.command
-def delete(task_id: int):  # noqa: F811
+def delete(task_id: str):  # noqa: F811
     """Delete a task permanently."""
     try:
+        task_uuid = UUID(task_id)
         with get_uow() as uow:
-            task = uow.tasks.get(task_id)
+            task = uow.tasks.get(task_uuid)
             if not task:
-                print(f"✗ Task {task_id} not found.", file=sys.stderr)
+                print_error(f"Task {task_id} not found.")
                 sys.exit(1)
 
-            uow.tasks.delete(task_id)
+            uow.tasks.delete(task_uuid)
             uow.commit()
-            print(f"✓ Task deleted: {task.title}")
+            print_success(f"Task deleted: {task.title}")
     except Exception as e:
-        print(f"✗ Error deleting task: {e}", file=sys.stderr)
+        print_error(f"Error deleting task: {e}")
         sys.exit(1)
 
 
 @tasks_app.command
 def update(  # noqa: F811
-    task_id: int,
+    task_id: str,
     title: Optional[str] = None,
     description: Optional[str] = None,
     priority: Optional[int] = None,
@@ -218,9 +211,9 @@ def update(  # noqa: F811
     """Update a task."""
     try:
         with get_uow() as uow:
-            task = uow.tasks.get(task_id)
+            task = uow.tasks.get(UUID(task_id))
             if not task:
-                print(f"✗ Task {task_id} not found.", file=sys.stderr)
+                print_error(f"Task {task_id} not found.")
                 sys.exit(1)
 
             if title is not None:
@@ -233,9 +226,9 @@ def update(  # noqa: F811
             task.updated_at = datetime.now(datetime.now().astimezone().tzinfo)
             uow.tasks.update(task)
             uow.commit()
-            print(f"✓ Task updated: {task.title}")
+            print_success(f"Task updated: {task.title}")
     except Exception as e:
-        print(f"✗ Error updating task: {e}", file=sys.stderr)
+        print_error(f"Error updating task: {e}")
         sys.exit(1)
 
 
@@ -247,7 +240,7 @@ def add(title: str, content: Optional[str] = None):  # noqa: F811
     """Add a new note."""
     try:
         with get_uow() as uow:
-            note = Note(id=0, title=title, content=content)
+            note = Note(title=title, content=content)
             uow.notes.add(note)
             uow.commit()  # Commit to get database-assigned ID
 
@@ -256,9 +249,9 @@ def add(title: str, content: Optional[str] = None):  # noqa: F811
             add_to_daily_log(uow, today, note_id=note.id)
             uow.commit()
 
-            print(f"✓ Note created: {title}")
+            print_success(f"Note created: {title}")
     except Exception as e:
-        print(f"✗ Error creating note: {e}", file=sys.stderr)
+        print_error(f"Error creating note: {e}")
         sys.exit(1)
 
 
@@ -269,66 +262,59 @@ def list():  # noqa: A001, F811
         with get_uow() as uow:
             notes_list = uow.notes.list()
 
-            if not notes_list:
-                print("No notes found.")
-                return
-
-            for note in notes_list:
-                print(f"📝 ({note.id}) {note.title}")
+            tree = build_note_tree(notes_list)
+            console.print(tree)
     except Exception as e:
-        print(f"✗ Error listing notes: {e}", file=sys.stderr)
+        print_error(f"Error listing notes: {e}")
         sys.exit(1)
 
 
 @notes_app.command
-def show(note_id: int):  # noqa: F811
+def show(note_id: str):  # noqa: F811
     """Show note details."""
     try:
         with get_uow() as uow:
-            note = uow.notes.get(note_id)
+            note = uow.notes.get(UUID(note_id))
             if not note:
-                print(f"✗ Note {note_id} not found.", file=sys.stderr)
+                print_error(f"Note {note_id} not found.")
                 sys.exit(1)
 
-            print(f"Note: {note.title}")
-            print(f"ID: {note.id}")
-            if note.content:
-                print(f"Content: {note.content}")
-            print(f"Created: {note.created_at}")
-            print(f"Updated: {note.updated_at}")
+            panel = build_note_detail_panel(note)
+            console.print(panel)
     except Exception as e:
-        print(f"✗ Error showing note: {e}", file=sys.stderr)
+        print_error(f"Error showing note: {e}")
         sys.exit(1)
 
 
 @notes_app.command
-def delete(note_id: int):  # noqa: F811
+def delete(note_id: str):  # noqa: F811
     """Delete a note."""
     try:
+        note_uuid = UUID(note_id)
         with get_uow() as uow:
-            note = uow.notes.get(note_id)
+            note = uow.notes.get(note_uuid)
             if not note:
-                print(f"✗ Note {note_id} not found.", file=sys.stderr)
+                print_error(f"Note {note_id} not found.")
                 sys.exit(1)
 
-            uow.notes.delete(note_id)
+            uow.notes.delete(note_uuid)
             uow.commit()
-            print(f"✓ Note deleted: {note.title}")
+            print_success(f"Note deleted: {note.title}")
     except Exception as e:
-        print(f"✗ Error deleting note: {e}", file=sys.stderr)
+        print_error(f"Error deleting note: {e}")
         sys.exit(1)
 
 
 @notes_app.command
 def update(  # noqa: F811
-    note_id: int, title: Optional[str] = None, content: Optional[str] = None
+    note_id: str, title: Optional[str] = None, content: Optional[str] = None
 ):
     """Update a note."""
     try:
         with get_uow() as uow:
-            note = uow.notes.get(note_id)
+            note = uow.notes.get(UUID(note_id))
             if not note:
-                print(f"✗ Note {note_id} not found.", file=sys.stderr)
+                print_error(f"Note {note_id} not found.")
                 sys.exit(1)
 
             if title is not None:
@@ -339,9 +325,9 @@ def update(  # noqa: F811
             note.updated_at = datetime.now(datetime.now().astimezone().tzinfo)
             uow.notes.update(note)
             uow.commit()
-            print(f"✓ Note updated: {note.title}")
+            print_success(f"Note updated: {note.title}")
     except Exception as e:
-        print(f"✗ Error updating note: {e}", file=sys.stderr)
+        print_error(f"Error updating note: {e}")
         sys.exit(1)
 
 
@@ -358,7 +344,7 @@ def add(title: str, date: str, content: Optional[str] = None):  # noqa: F811
             occurred_at = occurred_at.replace(tzinfo=datetime.now().astimezone().tzinfo)
 
         with get_uow() as uow:
-            event = Event(id=0, title=title, occurred_at=occurred_at, content=content)
+            event = Event(title=title, occurred_at=occurred_at, content=content)
             uow.events.add(event)
             uow.commit()  # Commit to get database-assigned ID
 
@@ -369,15 +355,12 @@ def add(title: str, date: str, content: Optional[str] = None):  # noqa: F811
             add_to_daily_log(uow, event_date, event_id=event.id)
             uow.commit()
 
-            print(f"✓ Event created: {title}")
+            print_success(f"Event created: {title}")
     except ValueError:
-        print(
-            "✗ Invalid date format. Use ISO format: 2024-01-15T10:00:00",
-            file=sys.stderr,
-        )
+        print_error("Invalid date format. Use ISO format: 2024-01-15T10:00:00")
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Error creating event: {e}", file=sys.stderr)
+        print_error(f"Error creating event: {e}")
         sys.exit(1)
 
 
@@ -388,60 +371,52 @@ def list():  # noqa: A001, F811
         with get_uow() as uow:
             events_list = uow.events.list()
 
-            if not events_list:
-                print("No events found.")
-                return
-
-            for event in events_list:
-                print(f"📅 ({event.id}) {event.title} - {event.occurred_at}")
+            tree = build_event_tree(events_list)
+            console.print(tree)
     except Exception as e:
-        print(f"✗ Error listing events: {e}", file=sys.stderr)
+        print_error(f"Error listing events: {e}")
         sys.exit(1)
 
 
 @events_app.command
-def show(event_id: int):  # noqa: F811
+def show(event_id: str):  # noqa: F811
     """Show event details."""
     try:
         with get_uow() as uow:
-            event = uow.events.get(event_id)
+            event = uow.events.get(UUID(event_id))
             if not event:
-                print(f"✗ Event {event_id} not found.", file=sys.stderr)
+                print_error(f"Event {event_id} not found.")
                 sys.exit(1)
 
-            print(f"Event: {event.title}")
-            print(f"ID: {event.id}")
-            print(f"Occurred: {event.occurred_at}")
-            if event.content:
-                print(f"Content: {event.content}")
-            print(f"Created: {event.created_at}")
-            print(f"Updated: {event.updated_at}")
+            panel = build_event_detail_panel(event)
+            console.print(panel)
     except Exception as e:
-        print(f"✗ Error showing event: {e}", file=sys.stderr)
+        print_error(f"Error showing event: {e}")
         sys.exit(1)
 
 
 @events_app.command
-def delete(event_id: int):  # noqa: F811
+def delete(event_id: str):  # noqa: F811
     """Delete an event."""
     try:
+        event_uuid = UUID(event_id)
         with get_uow() as uow:
-            event = uow.events.get(event_id)
+            event = uow.events.get(event_uuid)
             if not event:
-                print(f"✗ Event {event_id} not found.", file=sys.stderr)
+                print_error(f"Event {event_id} not found.")
                 sys.exit(1)
 
-            uow.events.delete(event_id)
+            uow.events.delete(event_uuid)
             uow.commit()
-            print(f"✓ Event deleted: {event.title}")
+            print_success(f"Event deleted: {event.title}")
     except Exception as e:
-        print(f"✗ Error deleting event: {e}", file=sys.stderr)
+        print_error(f"Error deleting event: {e}")
         sys.exit(1)
 
 
 @events_app.command
 def update(  # noqa: F811
-    event_id: int,
+    event_id: str,
     title: Optional[str] = None,
     date: Optional[str] = None,
     content: Optional[str] = None,
@@ -449,9 +424,9 @@ def update(  # noqa: F811
     """Update an event."""
     try:
         with get_uow() as uow:
-            event = uow.events.get(event_id)
+            event = uow.events.get(UUID(event_id))
             if not event:
-                print(f"✗ Event {event_id} not found.", file=sys.stderr)
+                print_error(f"Event {event_id} not found.")
                 sys.exit(1)
 
             if title is not None:
@@ -470,15 +445,12 @@ def update(  # noqa: F811
             event.updated_at = datetime.now(datetime.now().astimezone().tzinfo)
             uow.events.update(event)
             uow.commit()
-            print(f"✓ Event updated: {event.title}")
+            print_success(f"Event updated: {event.title}")
     except ValueError:
-        print(
-            "✗ Invalid date format. Use ISO format: 2024-01-15T10:00:00",
-            file=sys.stderr,
-        )
+        print_error("Invalid date format. Use ISO format: 2024-01-15T10:00:00")
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Error updating event: {e}", file=sys.stderr)
+        print_error(f"Error updating event: {e}")
         sys.exit(1)
 
 
@@ -498,40 +470,32 @@ def today():
             # Get all log entries for this log
             entries = uow.log_entries.get_by_log_id(daily_log.id)
 
-            # Display log header
-            print(f"\n=== Daily Log: {log_date} ===\n")
+            # Collect tasks, notes, and events from entries
+            tasks = []
+            notes = []
+            events = []
 
-            if not entries:
-                print("(No entries)")
-                return
-
-            # Display entries chronologically
             for entry in entries:
                 if entry.task_id:
                     task = uow.tasks.get(entry.task_id)
                     if task:
-                        status_icon = (
-                            "✓"
-                            if task.status == TaskStatus.DONE
-                            else "✗"
-                            if task.status == TaskStatus.CANCELLED
-                            else "○"
-                        )
-                        print(f"{status_icon} Task: {task.title}")
-
+                        tasks.append(task)
                 elif entry.note_id:
                     note = uow.notes.get(entry.note_id)
                     if note:
-                        print(f"📝 Note: {note.title}")
-
+                        notes.append(note)
                 elif entry.event_id:
                     event = uow.events.get(entry.event_id)
                     if event:
-                        print(f"📅 Event: {event.title}")
+                        events.append(event)
 
-            print()  # Blank line at end
+            # Convert whenever.Date to datetime for display
+            log_datetime = datetime(log_date.year, log_date.month, log_date.day)
+
+            tree = build_log_tree(log_datetime, tasks, notes, events)
+            console.print(tree)
     except Exception as e:
-        print(f"✗ Error showing today's log: {e}", file=sys.stderr)
+        print_error(f"Error showing today's log: {e}")
         sys.exit(1)
 
 
@@ -556,40 +520,32 @@ def show(date: Optional[str] = None):  # noqa: F811
             # Get all log entries for this log
             entries = uow.log_entries.get_by_log_id(daily_log.id)
 
-            # Display log header
-            print(f"\n=== Daily Log: {log_date} ===\n")
+            # Collect tasks, notes, and events from entries
+            tasks = []
+            notes = []
+            events = []
 
-            if not entries:
-                print("(No entries)")
-                return
-
-            # Display entries chronologically
             for entry in entries:
                 if entry.task_id:
                     task = uow.tasks.get(entry.task_id)
                     if task:
-                        status_icon = (
-                            "✓"
-                            if task.status == TaskStatus.DONE
-                            else "✗"
-                            if task.status == TaskStatus.CANCELLED
-                            else "○"
-                        )
-                        print(f"{status_icon} Task: {task.title}")
-
+                        tasks.append(task)
                 elif entry.note_id:
                     note = uow.notes.get(entry.note_id)
                     if note:
-                        print(f"📝 Note: {note.title}")
-
+                        notes.append(note)
                 elif entry.event_id:
                     event = uow.events.get(entry.event_id)
                     if event:
-                        print(f"📅 Event: {event.title}")
+                        events.append(event)
 
-            print()  # Blank line at end
+            # Convert whenever.Date to datetime for display
+            log_datetime = datetime(log_date.year, log_date.month, log_date.day)
+
+            tree = build_log_tree(log_datetime, tasks, notes, events)
+            console.print(tree)
     except Exception as e:
-        print(f"✗ Error showing log: {e}", file=sys.stderr)
+        print_error(f"Error showing log: {e}")
         sys.exit(1)
 
 

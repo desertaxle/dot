@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from uuid import UUID
 
 import whenever
 
@@ -18,7 +19,7 @@ class TaskRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get(self, task_id: int) -> Optional[Task]:
+    def get(self, task_id: UUID) -> Optional[Task]:
         """Get a task by ID."""
         pass  # pragma: no cover
 
@@ -33,7 +34,7 @@ class TaskRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete(self, task_id: int) -> None:
+    def delete(self, task_id: UUID) -> None:
         """Delete a task by ID."""
         pass  # pragma: no cover
 
@@ -47,7 +48,7 @@ class NoteRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get(self, note_id: int) -> Optional[Note]:
+    def get(self, note_id: UUID) -> Optional[Note]:
         """Get a note by ID."""
         pass  # pragma: no cover
 
@@ -62,7 +63,7 @@ class NoteRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete(self, note_id: int) -> None:
+    def delete(self, note_id: UUID) -> None:
         """Delete a note by ID."""
         pass  # pragma: no cover
 
@@ -76,7 +77,7 @@ class EventRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get(self, event_id: int) -> Optional[Event]:
+    def get(self, event_id: UUID) -> Optional[Event]:
         """Get an event by ID."""
         pass  # pragma: no cover
 
@@ -91,7 +92,7 @@ class EventRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete(self, event_id: int) -> None:
+    def delete(self, event_id: UUID) -> None:
         """Delete an event by ID."""
         pass  # pragma: no cover
 
@@ -105,7 +106,7 @@ class ProjectRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get(self, project_id: int) -> Optional[Project]:
+    def get(self, project_id: UUID) -> Optional[Project]:
         """Get a project by ID."""
         pass  # pragma: no cover
 
@@ -120,7 +121,7 @@ class ProjectRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete(self, project_id: int) -> None:
+    def delete(self, project_id: UUID) -> None:
         """Delete a project by ID."""
         pass  # pragma: no cover
 
@@ -146,7 +147,7 @@ class LogEntryRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get(self, entry_id: int) -> Optional[LogEntry]:
+    def get(self, entry_id: UUID) -> Optional[LogEntry]:
         """Get a log entry by ID."""
         pass  # pragma: no cover
 
@@ -156,12 +157,12 @@ class LogEntryRepository(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def delete(self, entry_id: int) -> None:
+    def delete(self, entry_id: UUID) -> None:
         """Delete a log entry by ID."""
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_by_log_id(self, log_id: int) -> List[LogEntry]:
+    def get_by_log_id(self, log_id: UUID) -> List[LogEntry]:
         """Get all log entries for a specific log.
 
         Args:

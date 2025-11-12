@@ -1,6 +1,7 @@
 """Tests for Unit of Work pattern."""
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
@@ -63,12 +64,13 @@ class TestAbstractUnitOfWork:
 
         with uow:
             now = datetime.now(timezone.utc)
-            task = Task(id=1, title="Test", created_at=now, updated_at=now)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
             uow.tasks.add(task)
             uow.commit()
 
         # After commit, data should be persisted
-        assert uow.tasks.get(1) is not None
+        assert uow.tasks.get(task_id) is not None
 
     def test_uow_rollback(self):
         """UnitOfWork can rollback changes."""
@@ -76,7 +78,8 @@ class TestAbstractUnitOfWork:
 
         with uow:
             now = datetime.now(timezone.utc)
-            task = Task(id=1, title="Test", created_at=now, updated_at=now)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
             uow.tasks.add(task)
             uow.rollback()
 
@@ -94,10 +97,17 @@ class TestInMemoryUnitOfWork:
 
         with uow:
             # Add to multiple repositories
-            task = Task(id=1, title="Task", created_at=now, updated_at=now)
-            note = Note(id=1, title="Note", created_at=now, updated_at=now)
+            task_id = uuid4()
+            note_id = uuid4()
+            event_id = uuid4()
+            task = Task(id=task_id, title="Task", created_at=now, updated_at=now)
+            note = Note(id=note_id, title="Note", created_at=now, updated_at=now)
             event = Event(
-                id=1, title="Event", occurred_at=now, created_at=now, updated_at=now
+                id=event_id,
+                title="Event",
+                occurred_at=now,
+                created_at=now,
+                updated_at=now,
             )
 
             uow.tasks.add(task)
@@ -107,9 +117,9 @@ class TestInMemoryUnitOfWork:
             uow.commit()
 
         # All should be persisted
-        assert uow.tasks.get(1) is not None
-        assert uow.notes.get(1) is not None
-        assert uow.events.get(1) is not None
+        assert uow.tasks.get(task_id) is not None
+        assert uow.notes.get(note_id) is not None
+        assert uow.events.get(event_id) is not None
 
     def test_separate_uow_instances_have_separate_storage(self):
         """Each UoW instance has separate storage."""
@@ -118,12 +128,15 @@ class TestInMemoryUnitOfWork:
         now = datetime.now(timezone.utc)
 
         with uow1:
-            task = Task(id=1, title="Task in UoW1", created_at=now, updated_at=now)
+            task_id = uuid4()
+            task = Task(
+                id=task_id, title="Task in UoW1", created_at=now, updated_at=now
+            )
             uow1.tasks.add(task)
             uow1.commit()
 
         # uow2 should not have the task
-        assert uow2.tasks.get(1) is None
+        assert uow2.tasks.get(task_id) is None
 
     def test_uow_provides_fresh_repositories(self):
         """Each access to repository through UoW returns the same instance."""
@@ -140,7 +153,8 @@ class TestInMemoryUnitOfWork:
 
         try:
             with uow:
-                task = Task(id=1, title="Test", created_at=now, updated_at=now)
+                task_id = uuid4()
+                task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
                 uow.tasks.add(task)
                 raise ValueError("Test exception")
         except ValueError:
@@ -200,12 +214,13 @@ class TestSQLAlchemyUnitOfWork:
         now = datetime.now(timezone.utc)
 
         with uow:
-            task = Task(id=1, title="Test", created_at=now, updated_at=now)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
             uow.tasks.add(task)
             uow.commit()
 
         # After commit, data should be persisted
-        assert uow.tasks.get(1) is not None
+        assert uow.tasks.get(task_id) is not None
 
     def test_sqlalchemy_uow_rollback(self, sqlalchemy_session: Session):
         """SQLAlchemyUnitOfWork can rollback changes."""
@@ -213,12 +228,13 @@ class TestSQLAlchemyUnitOfWork:
         now = datetime.now(timezone.utc)
 
         with uow:
-            task = Task(id=1, title="Test", created_at=now, updated_at=now)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
             uow.tasks.add(task)
             uow.rollback()
 
         # After rollback, data should not be persisted
-        assert uow.tasks.get(1) is None
+        assert uow.tasks.get(task_id) is None
 
     def test_sqlalchemy_uow_multiple_repositories(self, sqlalchemy_session: Session):
         """Multiple repositories can be used in one SQLAlchemy UoW transaction."""
@@ -227,10 +243,17 @@ class TestSQLAlchemyUnitOfWork:
 
         with uow:
             # Add to multiple repositories
-            task = Task(id=1, title="Task", created_at=now, updated_at=now)
-            note = Note(id=1, title="Note", created_at=now, updated_at=now)
+            task_id = uuid4()
+            note_id = uuid4()
+            event_id = uuid4()
+            task = Task(id=task_id, title="Task", created_at=now, updated_at=now)
+            note = Note(id=note_id, title="Note", created_at=now, updated_at=now)
             event = Event(
-                id=1, title="Event", occurred_at=now, created_at=now, updated_at=now
+                id=event_id,
+                title="Event",
+                occurred_at=now,
+                created_at=now,
+                updated_at=now,
             )
 
             uow.tasks.add(task)
@@ -240,9 +263,9 @@ class TestSQLAlchemyUnitOfWork:
             uow.commit()
 
         # All should be persisted
-        assert uow.tasks.get(1) is not None
-        assert uow.notes.get(1) is not None
-        assert uow.events.get(1) is not None
+        assert uow.tasks.get(task_id) is not None
+        assert uow.notes.get(note_id) is not None
+        assert uow.events.get(event_id) is not None
 
     def test_sqlalchemy_uow_context_manager_exit_on_exception(
         self, sqlalchemy_session: Session
@@ -253,11 +276,12 @@ class TestSQLAlchemyUnitOfWork:
 
         try:
             with uow:
-                task = Task(id=1, title="Test", created_at=now, updated_at=now)
+                task_id = uuid4()
+                task = Task(id=task_id, title="Test", created_at=now, updated_at=now)
                 uow.tasks.add(task)
                 raise ValueError("Test exception")
         except ValueError:
             pass
 
         # After exception, data should not be persisted
-        assert uow.tasks.get(1) is None
+        assert uow.tasks.get(task_id) is None

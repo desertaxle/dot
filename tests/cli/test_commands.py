@@ -1,6 +1,7 @@
 """Tests for CLI commands using cyclopts."""
 
 import pytest
+from uuid import uuid4
 import whenever
 from unittest.mock import patch
 
@@ -92,9 +93,12 @@ class TestTaskListCommand:
             mock_uow = InMemoryUnitOfWork()
 
             # Add some tasks
-            task1 = Task(id=1, title="Task 1")
-            task2 = Task(id=2, title="Task 2")
-            task3 = Task(id=3, title="Task 3", status=TaskStatus.DONE)
+            task1_id = uuid4()
+            task2_id = uuid4()
+            task3_id = uuid4()
+            task1 = Task(id=task1_id, title="Task 1")
+            task2 = Task(id=task2_id, title="Task 2")
+            task3 = Task(id=task3_id, title="Task 3", status=TaskStatus.DONE)
             mock_uow.tasks.add(task1)
             mock_uow.tasks.add(task2)
             mock_uow.tasks.add(task3)
@@ -115,10 +119,15 @@ class TestTaskListCommand:
             mock_uow = InMemoryUnitOfWork()
 
             # Add tasks with different statuses
-            task_todo = Task(id=1, title="Todo task", status=TaskStatus.TODO)
-            task_done = Task(id=2, title="Done task", status=TaskStatus.DONE)
+            task_todo_id = uuid4()
+            task_done_id = uuid4()
+            task_cancelled_id = uuid4()
+            task_todo = Task(id=task_todo_id, title="Todo task", status=TaskStatus.TODO)
+            task_done = Task(id=task_done_id, title="Done task", status=TaskStatus.DONE)
             task_cancelled = Task(
-                id=3, title="Cancelled task", status=TaskStatus.CANCELLED
+                id=task_cancelled_id,
+                title="Cancelled task",
+                status=TaskStatus.CANCELLED,
             )
 
             mock_uow.tasks.add(task_todo)
@@ -140,8 +149,11 @@ class TestTaskListCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
+            task_cancelled_id = uuid4()
             task_cancelled = Task(
-                id=1, title="Cancelled task", status=TaskStatus.CANCELLED
+                id=task_cancelled_id,
+                title="Cancelled task",
+                status=TaskStatus.CANCELLED,
             )
             mock_uow.tasks.add(task_cancelled)
             mock_uow.commit()
@@ -162,13 +174,14 @@ class TestTaskShowCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Test task", description="A test", priority=1)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Test task", description="A test", priority=1)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "show", "1"], result_action="return_value")
+            app(["tasks", "show", str(task_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "Test task" in captured.out
@@ -180,8 +193,11 @@ class TestTaskShowCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["tasks", "show", "999"], result_action="return_value")
+                app(
+                    ["tasks", "show", str(nonexistent_id)], result_action="return_value"
+                )
 
 
 class TestTaskDoneCommand:
@@ -192,15 +208,16 @@ class TestTaskDoneCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task to complete", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task to complete", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "done", "1"], result_action="return_value")
+            app(["tasks", "done", str(task_id)], result_action="return_value")
 
-            updated_task = mock_uow.tasks.get(1)
+            updated_task = mock_uow.tasks.get(task_id)
             assert updated_task is not None
             assert updated_task.status == TaskStatus.DONE
 
@@ -210,21 +227,25 @@ class TestTaskDoneCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["tasks", "done", "999"], result_action="return_value")
+                app(
+                    ["tasks", "done", str(nonexistent_id)], result_action="return_value"
+                )
 
     def test_done_output(self, capsys):
         """Test done command output."""
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "done", "1"], result_action="return_value")
+            app(["tasks", "done", str(task_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "done" in captured.out.lower() or "completed" in captured.out.lower()
@@ -238,15 +259,16 @@ class TestTaskCancelCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task to cancel", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task to cancel", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "cancel", "1"], result_action="return_value")
+            app(["tasks", "cancel", str(task_id)], result_action="return_value")
 
-            updated_task = mock_uow.tasks.get(1)
+            updated_task = mock_uow.tasks.get(task_id)
             assert updated_task is not None
             assert updated_task.status == TaskStatus.CANCELLED
 
@@ -255,7 +277,8 @@ class TestTaskCancelCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task to cancel", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task to cancel", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
@@ -277,21 +300,26 @@ class TestTaskCancelCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["tasks", "cancel", "999"], result_action="return_value")
+                app(
+                    ["tasks", "cancel", str(nonexistent_id)],
+                    result_action="return_value",
+                )
 
     def test_cancel_output(self, capsys):
         """Test cancel command output."""
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "cancel", "1"], result_action="return_value")
+            app(["tasks", "cancel", str(task_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "cancel" in captured.out.lower()
@@ -305,16 +333,17 @@ class TestTaskDeleteCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task to delete")
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task to delete")
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "delete", "1"], result_action="return_value")
+            app(["tasks", "delete", str(task_id)], result_action="return_value")
 
             # Task should no longer exist
-            deleted_task = mock_uow.tasks.get(1)
+            deleted_task = mock_uow.tasks.get(task_id)
             assert deleted_task is None
 
     def test_delete_nonexistent_task(self):
@@ -323,21 +352,26 @@ class TestTaskDeleteCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["tasks", "delete", "999"], result_action="return_value")
+                app(
+                    ["tasks", "delete", str(nonexistent_id)],
+                    result_action="return_value",
+                )
 
     def test_delete_output(self, capsys):
         """Test delete command output."""
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task", status=TaskStatus.TODO)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task", status=TaskStatus.TODO)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["tasks", "delete", "1"], result_action="return_value")
+            app(["tasks", "delete", str(task_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "delete" in captured.out.lower() or "removed" in captured.out.lower()
@@ -351,18 +385,19 @@ class TestTaskUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Old title")
+            task_id = uuid4()
+            task = Task(id=task_id, title="Old title")
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["tasks", "update", "1", "--title", "New title"],
+                ["tasks", "update", str(task_id), "--title", "New title"],
                 result_action="return_value",
             )
 
-            updated_task = mock_uow.tasks.get(1)
+            updated_task = mock_uow.tasks.get(task_id)
             assert updated_task is not None
             assert updated_task.title == "New title"
 
@@ -371,18 +406,19 @@ class TestTaskUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task", description="Old description")
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task", description="Old description")
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["tasks", "update", "1", "--description", "New description"],
+                ["tasks", "update", str(task_id), "--description", "New description"],
                 result_action="return_value",
             )
 
-            updated_task = mock_uow.tasks.get(1)
+            updated_task = mock_uow.tasks.get(task_id)
             assert updated_task is not None
             assert updated_task.description == "New description"
 
@@ -391,18 +427,19 @@ class TestTaskUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Task", priority=3)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Task", priority=3)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["tasks", "update", "1", "--priority", "1"],
+                ["tasks", "update", str(task_id), "--priority", "1"],
                 result_action="return_value",
             )
 
-            updated_task = mock_uow.tasks.get(1)
+            updated_task = mock_uow.tasks.get(task_id)
             assert updated_task is not None
             assert updated_task.priority == 1
 
@@ -412,9 +449,10 @@ class TestTaskUpdateCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
                 app(
-                    ["tasks", "update", "999", "--title", "New title"],
+                    ["tasks", "update", str(nonexistent_id), "--title", "New title"],
                     result_action="return_value",
                 )
 
@@ -423,14 +461,15 @@ class TestTaskUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            task = Task(id=1, title="Old", priority=None)
+            task_id = uuid4()
+            task = Task(id=task_id, title="Old", priority=None)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["tasks", "update", "1", "--title", "New"],
+                ["tasks", "update", str(task_id), "--title", "New"],
                 result_action="return_value",
             )
             captured = capsys.readouterr()
@@ -489,8 +528,10 @@ class TestNoteListCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            note1 = Note(id=1, title="Note 1")
-            note2 = Note(id=2, title="Note 2")
+            note1_id = uuid4()
+            note2_id = uuid4()
+            note1 = Note(id=note1_id, title="Note 1")
+            note2 = Note(id=note2_id, title="Note 2")
             mock_uow.notes.add(note1)
             mock_uow.notes.add(note2)
             mock_uow.commit()
@@ -512,13 +553,14 @@ class TestNoteShowCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            note = Note(id=1, title="Test note", content="Content here")
+            note_id = uuid4()
+            note = Note(id=note_id, title="Test note", content="Content here")
             mock_uow.notes.add(note)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["notes", "show", "1"], result_action="return_value")
+            app(["notes", "show", str(note_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "Test note" in captured.out
@@ -530,8 +572,11 @@ class TestNoteShowCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["notes", "show", "999"], result_action="return_value")
+                app(
+                    ["notes", "show", str(nonexistent_id)], result_action="return_value"
+                )
 
 
 class TestNoteDeleteCommand:
@@ -542,15 +587,16 @@ class TestNoteDeleteCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            note = Note(id=1, title="Note to delete")
+            note_id = uuid4()
+            note = Note(id=note_id, title="Note to delete")
             mock_uow.notes.add(note)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["notes", "delete", "1"], result_action="return_value")
+            app(["notes", "delete", str(note_id)], result_action="return_value")
 
-            deleted_note = mock_uow.notes.get(1)
+            deleted_note = mock_uow.notes.get(note_id)
             assert deleted_note is None
 
 
@@ -562,18 +608,19 @@ class TestNoteUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            note = Note(id=1, title="Old title")
+            note_id = uuid4()
+            note = Note(id=note_id, title="Old title")
             mock_uow.notes.add(note)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["notes", "update", "1", "--title", "New title"],
+                ["notes", "update", str(note_id), "--title", "New title"],
                 result_action="return_value",
             )
 
-            updated_note = mock_uow.notes.get(1)
+            updated_note = mock_uow.notes.get(note_id)
             assert updated_note is not None
             assert updated_note.title == "New title"
 
@@ -582,18 +629,19 @@ class TestNoteUpdateCommand:
         with patch("dot.__main__.get_uow") as mock_get_uow:
             mock_uow = InMemoryUnitOfWork()
 
-            note = Note(id=1, title="Note", content="Old content")
+            note_id = uuid4()
+            note = Note(id=note_id, title="Note", content="Old content")
             mock_uow.notes.add(note)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["notes", "update", "1", "--content", "New content"],
+                ["notes", "update", str(note_id), "--content", "New content"],
                 result_action="return_value",
             )
 
-            updated_note = mock_uow.notes.get(1)
+            updated_note = mock_uow.notes.get(note_id)
             assert updated_note is not None
             assert updated_note.content == "New content"
 
@@ -666,8 +714,10 @@ class TestEventListCommand:
             mock_uow = InMemoryUnitOfWork()
 
             now = datetime.now(timezone.utc)
-            event1 = Event(id=1, title="Event 1", occurred_at=now)
-            event2 = Event(id=2, title="Event 2", occurred_at=now)
+            event1_id = uuid4()
+            event2_id = uuid4()
+            event1 = Event(id=event1_id, title="Event 1", occurred_at=now)
+            event2 = Event(id=event2_id, title="Event 2", occurred_at=now)
             mock_uow.events.add(event1)
             mock_uow.events.add(event2)
             mock_uow.commit()
@@ -690,13 +740,16 @@ class TestEventShowCommand:
             mock_uow = InMemoryUnitOfWork()
 
             now = datetime.now(timezone.utc)
-            event = Event(id=1, title="Test event", content="Details", occurred_at=now)
+            event_id = uuid4()
+            event = Event(
+                id=event_id, title="Test event", content="Details", occurred_at=now
+            )
             mock_uow.events.add(event)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["events", "show", "1"], result_action="return_value")
+            app(["events", "show", str(event_id)], result_action="return_value")
             captured = capsys.readouterr()
 
             assert "Test event" in captured.out
@@ -708,8 +761,12 @@ class TestEventShowCommand:
             mock_uow = InMemoryUnitOfWork()
             mock_get_uow.return_value = mock_uow
 
+            nonexistent_id = uuid4()
             with pytest.raises(SystemExit):
-                app(["events", "show", "999"], result_action="return_value")
+                app(
+                    ["events", "show", str(nonexistent_id)],
+                    result_action="return_value",
+                )
 
 
 class TestEventDeleteCommand:
@@ -721,15 +778,16 @@ class TestEventDeleteCommand:
             mock_uow = InMemoryUnitOfWork()
 
             now = datetime.now(timezone.utc)
-            event = Event(id=1, title="Event to delete", occurred_at=now)
+            event_id = uuid4()
+            event = Event(id=event_id, title="Event to delete", occurred_at=now)
             mock_uow.events.add(event)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
-            app(["events", "delete", "1"], result_action="return_value")
+            app(["events", "delete", str(event_id)], result_action="return_value")
 
-            deleted_event = mock_uow.events.get(1)
+            deleted_event = mock_uow.events.get(event_id)
             assert deleted_event is None
 
 
@@ -742,18 +800,19 @@ class TestEventUpdateCommand:
             mock_uow = InMemoryUnitOfWork()
 
             now = datetime.now(timezone.utc)
-            event = Event(id=1, title="Old title", occurred_at=now)
+            event_id = uuid4()
+            event = Event(id=event_id, title="Old title", occurred_at=now)
             mock_uow.events.add(event)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["events", "update", "1", "--title", "New title"],
+                ["events", "update", str(event_id), "--title", "New title"],
                 result_action="return_value",
             )
 
-            updated_event = mock_uow.events.get(1)
+            updated_event = mock_uow.events.get(event_id)
             assert updated_event is not None
             assert updated_event.title == "New title"
 
@@ -763,18 +822,21 @@ class TestEventUpdateCommand:
             mock_uow = InMemoryUnitOfWork()
 
             now = datetime.now(timezone.utc)
-            event = Event(id=1, title="Event", content="Old content", occurred_at=now)
+            event_id = uuid4()
+            event = Event(
+                id=event_id, title="Event", content="Old content", occurred_at=now
+            )
             mock_uow.events.add(event)
             mock_uow.commit()
 
             mock_get_uow.return_value = mock_uow
 
             app(
-                ["events", "update", "1", "--content", "New content"],
+                ["events", "update", str(event_id), "--content", "New content"],
                 result_action="return_value",
             )
 
-            updated_event = mock_uow.events.get(1)
+            updated_event = mock_uow.events.get(event_id)
             assert updated_event is not None
             assert updated_event.content == "New content"
 
@@ -798,6 +860,7 @@ class TestTaskAddCreatesLogEntry:
             # Verify log entry was created
             today = whenever.Instant.now().to_system_tz().date()
             daily_log = mock_uow.projects.get_daily_log(today)
+            assert daily_log.id is not None
             entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
 
             assert len(entries) == 1
@@ -825,6 +888,7 @@ class TestNoteAddCreatesLogEntry:
             # Verify log entry was created
             today = whenever.Instant.now().to_system_tz().date()
             daily_log = mock_uow.projects.get_daily_log(today)
+            assert daily_log.id is not None
             entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
 
             assert len(entries) == 1
@@ -861,6 +925,7 @@ class TestEventAddCreatesLogEntry:
                 whenever.Instant.from_py_datetime(occurred_at).to_system_tz().date()
             )
             daily_log = mock_uow.projects.get_daily_log(event_date)
+            assert daily_log.id is not None
             entries = mock_uow.log_entries.get_by_log_id(daily_log.id)
 
             assert len(entries) == 1
@@ -893,7 +958,9 @@ class TestLogsShowCommand:
             now = datetime.now(timezone.utc)
             today = whenever.Instant.now().to_system_tz().date()
 
-            task = Task(id=1, title="Test task", created_at=now, updated_at=now)
+            task_id = uuid4()
+            log_entry_id = uuid4()
+            task = Task(id=task_id, title="Test task", created_at=now, updated_at=now)
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
@@ -901,7 +968,10 @@ class TestLogsShowCommand:
             daily_log = mock_uow.projects.get_daily_log(today)
             from dot.domain.log_operations import LogEntry
 
-            log_entry = LogEntry(id=1, log_id=daily_log.id, task_id=1, entry_date=today)
+            assert daily_log.id is not None
+            log_entry = LogEntry(
+                id=log_entry_id, log_id=daily_log.id, task_id=task_id, entry_date=today
+            )
             mock_uow.log_entries.add(log_entry)
             mock_uow.commit()
 
@@ -922,7 +992,9 @@ class TestLogsShowCommand:
             now = datetime.now(timezone.utc)
             today = whenever.Instant.now().to_system_tz().date()
 
-            note = Note(id=1, title="Test note", created_at=now, updated_at=now)
+            note_id = uuid4()
+            log_entry_id = uuid4()
+            note = Note(id=note_id, title="Test note", created_at=now, updated_at=now)
             mock_uow.notes.add(note)
             mock_uow.commit()
 
@@ -930,7 +1002,10 @@ class TestLogsShowCommand:
             daily_log = mock_uow.projects.get_daily_log(today)
             from dot.domain.log_operations import LogEntry
 
-            log_entry = LogEntry(id=1, log_id=daily_log.id, note_id=1, entry_date=today)
+            assert daily_log.id is not None
+            log_entry = LogEntry(
+                id=log_entry_id, log_id=daily_log.id, note_id=note_id, entry_date=today
+            )
             mock_uow.log_entries.add(log_entry)
             mock_uow.commit()
 
@@ -951,8 +1026,10 @@ class TestLogsShowCommand:
             now = datetime.now(timezone.utc)
             today = whenever.Instant.now().to_system_tz().date()
 
+            event_id = uuid4()
+            log_entry_id = uuid4()
             event = Event(
-                id=1,
+                id=event_id,
                 title="Test event",
                 occurred_at=now,
                 created_at=now,
@@ -965,8 +1042,12 @@ class TestLogsShowCommand:
             daily_log = mock_uow.projects.get_daily_log(today)
             from dot.domain.log_operations import LogEntry
 
+            assert daily_log.id is not None
             log_entry = LogEntry(
-                id=1, log_id=daily_log.id, event_id=1, entry_date=today
+                id=log_entry_id,
+                log_id=daily_log.id,
+                event_id=event_id,
+                entry_date=today,
             )
             mock_uow.log_entries.add(log_entry)
             mock_uow.commit()
@@ -988,8 +1069,12 @@ class TestLogsShowCommand:
             now = datetime.now(timezone.utc)
             today = whenever.Instant.now().to_system_tz().date()
 
-            task = Task(id=1, title="Test task", created_at=now, updated_at=now)
-            note = Note(id=1, title="Test note", created_at=now, updated_at=now)
+            task_id = uuid4()
+            note_id = uuid4()
+            log_entry1_id = uuid4()
+            log_entry2_id = uuid4()
+            task = Task(id=task_id, title="Test task", created_at=now, updated_at=now)
+            note = Note(id=note_id, title="Test note", created_at=now, updated_at=now)
             mock_uow.tasks.add(task)
             mock_uow.notes.add(note)
             mock_uow.commit()
@@ -998,11 +1083,12 @@ class TestLogsShowCommand:
             daily_log = mock_uow.projects.get_daily_log(today)
             from dot.domain.log_operations import LogEntry
 
+            assert daily_log.id is not None
             log_entry1 = LogEntry(
-                id=1, log_id=daily_log.id, task_id=1, entry_date=today
+                id=log_entry1_id, log_id=daily_log.id, task_id=task_id, entry_date=today
             )
             log_entry2 = LogEntry(
-                id=2, log_id=daily_log.id, note_id=1, entry_date=today
+                id=log_entry2_id, log_id=daily_log.id, note_id=note_id, entry_date=today
             )
             mock_uow.log_entries.add(log_entry1)
             mock_uow.log_entries.add(log_entry2)
@@ -1053,7 +1139,11 @@ class TestLogsTodayCommand:
             now = datetime.now(timezone.utc)
             today = whenever.Instant.now().to_system_tz().date()
 
-            task = Task(id=1, title="Today's task", created_at=now, updated_at=now)
+            task_id = uuid4()
+            log_entry_id = uuid4()
+            task = Task(
+                id=task_id, title="Today's task", created_at=now, updated_at=now
+            )
             mock_uow.tasks.add(task)
             mock_uow.commit()
 
@@ -1061,7 +1151,10 @@ class TestLogsTodayCommand:
             daily_log = mock_uow.projects.get_daily_log(today)
             from dot.domain.log_operations import LogEntry
 
-            log_entry = LogEntry(id=1, log_id=daily_log.id, task_id=1, entry_date=today)
+            assert daily_log.id is not None
+            log_entry = LogEntry(
+                id=log_entry_id, log_id=daily_log.id, task_id=task_id, entry_date=today
+            )
             mock_uow.log_entries.add(log_entry)
             mock_uow.commit()
 

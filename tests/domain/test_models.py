@@ -1,6 +1,7 @@
 """Tests for domain models."""
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import whenever
 
@@ -13,15 +14,16 @@ class TestTask:
     def test_create_task_with_required_fields(self):
         """Task can be created with required fields."""
         now = datetime.now(timezone.utc)
+        task_id = uuid4()
         task = Task(
-            id=1,
+            id=task_id,
             title="Buy groceries",
             status=TaskStatus.TODO,
             created_at=now,
             updated_at=now,
         )
 
-        assert task.id == 1
+        assert task.id == task_id
         assert task.title == "Buy groceries"
         assert task.status == TaskStatus.TODO
         assert task.created_at == now
@@ -31,7 +33,7 @@ class TestTask:
         """Task can be created with optional fields."""
         now = datetime.now(timezone.utc)
         task = Task(
-            id=1,
+            id=uuid4(),
             title="Buy groceries",
             description="Get milk and eggs",
             status=TaskStatus.TODO,
@@ -45,7 +47,7 @@ class TestTask:
 
     def test_task_with_defaults(self):
         """Task has sensible defaults."""
-        task = Task(id=1, title="Test task")
+        task = Task(id=uuid4(), title="Test task")
 
         assert task.status == TaskStatus.TODO
         assert task.description is None
@@ -58,17 +60,21 @@ class TestTask:
         now = datetime.now(timezone.utc)
 
         todo_task = Task(
-            id=1, title="Todo", status=TaskStatus.TODO, created_at=now, updated_at=now
+            id=uuid4(),
+            title="Todo",
+            status=TaskStatus.TODO,
+            created_at=now,
+            updated_at=now,
         )
         done_task = Task(
-            id=2,
+            id=uuid4(),
             title="Done",
             status=TaskStatus.DONE,
             created_at=now,
             updated_at=now,
         )
         cancelled_task = Task(
-            id=3,
+            id=uuid4(),
             title="Cancelled",
             status=TaskStatus.CANCELLED,
             created_at=now,
@@ -86,14 +92,15 @@ class TestNote:
     def test_create_note_with_required_fields(self):
         """Note can be created with required fields."""
         now = datetime.now(timezone.utc)
+        note_id = uuid4()
         note = Note(
-            id=1,
+            id=note_id,
             title="My thoughts",
             created_at=now,
             updated_at=now,
         )
 
-        assert note.id == 1
+        assert note.id == note_id
         assert note.title == "My thoughts"
         assert note.created_at == now
         assert note.updated_at == now
@@ -102,7 +109,7 @@ class TestNote:
         """Note can be created with content."""
         now = datetime.now(timezone.utc)
         note = Note(
-            id=1,
+            id=uuid4(),
             title="My thoughts",
             content="This is a long thought...",
             created_at=now,
@@ -113,7 +120,7 @@ class TestNote:
 
     def test_note_with_defaults(self):
         """Note has sensible defaults."""
-        note = Note(id=1, title="Test note")
+        note = Note(id=uuid4(), title="Test note")
 
         assert note.content is None
         assert isinstance(note.created_at, datetime)
@@ -126,15 +133,16 @@ class TestEvent:
     def test_create_event_with_required_fields(self):
         """Event can be created with required fields."""
         now = datetime.now(timezone.utc)
+        event_id = uuid4()
         event = Event(
-            id=1,
+            id=event_id,
             title="Had coffee",
             occurred_at=now,
             created_at=now,
             updated_at=now,
         )
 
-        assert event.id == 1
+        assert event.id == event_id
         assert event.title == "Had coffee"
         assert event.occurred_at == now
         assert event.created_at == now
@@ -144,7 +152,7 @@ class TestEvent:
         """Event can be created with content."""
         now = datetime.now(timezone.utc)
         event = Event(
-            id=1,
+            id=uuid4(),
             title="Had coffee",
             content="Met with Alice at the cafe",
             occurred_at=now,
@@ -157,7 +165,7 @@ class TestEvent:
     def test_event_with_defaults(self):
         """Event has sensible defaults."""
         occurred_at = datetime.now(timezone.utc)
-        event = Event(id=1, title="Test event", occurred_at=occurred_at)
+        event = Event(id=uuid4(), title="Test event", occurred_at=occurred_at)
 
         assert event.content is None
         assert isinstance(event.created_at, datetime)
@@ -168,7 +176,7 @@ class TestEvent:
         """Event occurred_at can be any time."""
         past = datetime(2020, 1, 1, tzinfo=timezone.utc)
         event = Event(
-            id=1,
+            id=uuid4(),
             title="Past event",
             occurred_at=past,
         )
@@ -181,14 +189,14 @@ class TestLogDefaults:
 
     def test_weekly_log_default_week_start(self):
         """WeeklyLog without week_start uses current week."""
-        log = WeeklyLog(id=1, name="This Week")
+        log = WeeklyLog(id=uuid4(), name="This Week")
         assert log.week_start is not None
         # Should be a Monday (day_of_week value = 1)
         assert log.week_start.day_of_week().value == 1
 
     def test_monthly_log_default_year_month(self):
         """MonthlyLog without year/month uses current month."""
-        log = MonthlyLog(id=1, name="This Month")
+        log = MonthlyLog(id=uuid4(), name="This Month")
         today = whenever.Instant.now().to_system_tz().date()
         assert log.year == today.year
         assert log.month == today.month

@@ -1,6 +1,7 @@
 """In-memory repository implementations for testing."""
 
 from typing import Dict, List, Optional
+from uuid import UUID, uuid4
 
 import whenever
 
@@ -20,13 +21,16 @@ class InMemoryTaskRepository(TaskRepository):
 
     def __init__(self):
         """Initialize with empty storage."""
-        self._tasks: Dict[int, Task] = {}
+        self._tasks: Dict[UUID, Task] = {}
 
     def add(self, task: Task) -> None:
         """Add a task to storage."""
+        # Auto-assign ID if not set
+        if task.id is None:
+            task.id = uuid4()
         self._tasks[task.id] = task
 
-    def get(self, task_id: int) -> Optional[Task]:
+    def get(self, task_id: UUID) -> Optional[Task]:
         """Get a task by ID."""
         return self._tasks.get(task_id)
 
@@ -39,7 +43,7 @@ class InMemoryTaskRepository(TaskRepository):
         if task.id in self._tasks:
             self._tasks[task.id] = task
 
-    def delete(self, task_id: int) -> None:
+    def delete(self, task_id: UUID) -> None:
         """Delete a task by ID."""
         self._tasks.pop(task_id, None)
 
@@ -49,13 +53,16 @@ class InMemoryNoteRepository(NoteRepository):
 
     def __init__(self):
         """Initialize with empty storage."""
-        self._notes: Dict[int, Note] = {}
+        self._notes: Dict[UUID, Note] = {}
 
     def add(self, note: Note) -> None:
         """Add a note to storage."""
+        # Auto-assign ID if not set
+        if note.id is None:
+            note.id = uuid4()
         self._notes[note.id] = note
 
-    def get(self, note_id: int) -> Optional[Note]:
+    def get(self, note_id: UUID) -> Optional[Note]:
         """Get a note by ID."""
         return self._notes.get(note_id)
 
@@ -68,7 +75,7 @@ class InMemoryNoteRepository(NoteRepository):
         if note.id in self._notes:
             self._notes[note.id] = note
 
-    def delete(self, note_id: int) -> None:
+    def delete(self, note_id: UUID) -> None:
         """Delete a note by ID."""
         self._notes.pop(note_id, None)
 
@@ -78,13 +85,16 @@ class InMemoryEventRepository(EventRepository):
 
     def __init__(self):
         """Initialize with empty storage."""
-        self._events: Dict[int, Event] = {}
+        self._events: Dict[UUID, Event] = {}
 
     def add(self, event: Event) -> None:
         """Add an event to storage."""
+        # Auto-assign ID if not set
+        if event.id is None:
+            event.id = uuid4()
         self._events[event.id] = event
 
-    def get(self, event_id: int) -> Optional[Event]:
+    def get(self, event_id: UUID) -> Optional[Event]:
         """Get an event by ID."""
         return self._events.get(event_id)
 
@@ -97,7 +107,7 @@ class InMemoryEventRepository(EventRepository):
         if event.id in self._events:
             self._events[event.id] = event
 
-    def delete(self, event_id: int) -> None:
+    def delete(self, event_id: UUID) -> None:
         """Delete an event by ID."""
         self._events.pop(event_id, None)
 
@@ -107,17 +117,16 @@ class InMemoryProjectRepository(ProjectRepository):
 
     def __init__(self):
         """Initialize with empty storage."""
-        self._projects: Dict[int, Project] = {}
-        self._next_id = 1
+        self._projects: Dict[UUID, Project] = {}
 
     def add(self, project: Project) -> None:
         """Add a project to storage."""
-        # Assign ID if not set
-        project.id = self._next_id
-        self._next_id += 1
+        # Auto-assign ID if not set
+        if project.id is None:
+            project.id = uuid4()
         self._projects[project.id] = project
 
-    def get(self, project_id: int) -> Optional[Project]:
+    def get(self, project_id: UUID) -> Optional[Project]:
         """Get a project by ID."""
         return self._projects.get(project_id)
 
@@ -130,7 +139,7 @@ class InMemoryProjectRepository(ProjectRepository):
         if project.id in self._projects:
             self._projects[project.id] = project
 
-    def delete(self, project_id: int) -> None:
+    def delete(self, project_id: UUID) -> None:
         """Delete a project by ID."""
         self._projects.pop(project_id, None)
 
@@ -145,12 +154,11 @@ class InMemoryProjectRepository(ProjectRepository):
 
         # Create new daily log
         daily_log = DailyLog(
-            id=self._next_id,
             name=f"Daily Log {log_date}",
             date=log_date,
         )
-        self._next_id += 1
-        self._projects[daily_log.id] = daily_log
+        # Assign ID and add to storage
+        self.add(daily_log)
         return daily_log
 
 
@@ -159,18 +167,16 @@ class InMemoryLogEntryRepository(LogEntryRepository):
 
     def __init__(self):
         """Initialize with empty storage."""
-        self._entries: Dict[int, LogEntry] = {}
-        self._next_id = 1
+        self._entries: Dict[UUID, LogEntry] = {}
 
     def add(self, log_entry: LogEntry) -> None:
         """Add a log entry to storage."""
-        # Assign ID if not set
-        if log_entry.id == 0:
-            log_entry.id = self._next_id
-            self._next_id += 1
+        # Auto-assign ID if not set
+        if log_entry.id is None:
+            log_entry.id = uuid4()
         self._entries[log_entry.id] = log_entry
 
-    def get(self, entry_id: int) -> Optional[LogEntry]:
+    def get(self, entry_id: UUID) -> Optional[LogEntry]:
         """Get a log entry by ID."""
         return self._entries.get(entry_id)
 
@@ -178,11 +184,11 @@ class InMemoryLogEntryRepository(LogEntryRepository):
         """List all log entries."""
         return list(self._entries.values())
 
-    def delete(self, entry_id: int) -> None:
+    def delete(self, entry_id: UUID) -> None:
         """Delete a log entry by ID."""
         self._entries.pop(entry_id, None)
 
-    def get_by_log_id(self, log_id: int) -> List[LogEntry]:
+    def get_by_log_id(self, log_id: UUID) -> List[LogEntry]:
         """Get all log entries for a specific log."""
         entries = [e for e in self._entries.values() if e.log_id == log_id]
         # Sort chronologically

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from uuid import UUID
 
 from dot.domain.models import Task, TaskStatus
 from dot.domain.validation import InvalidTaskError, validate_task
@@ -43,7 +44,7 @@ class TaskUpdated:
 
 
 def create_task(
-    id: int,
+    id: UUID,
     title: str,
     description: str | None = None,
     priority: int | None = None,
@@ -51,7 +52,7 @@ def create_task(
     """Create a new task.
 
     Args:
-        id: Unique task identifier
+        id: Unique task identifier (UUID)
         title: Task title
         description: Optional task description
         priority: Optional priority (1-3, where 1 is highest)

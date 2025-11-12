@@ -1,6 +1,7 @@
 """Tests for in-memory repository implementations."""
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import pytest
 
@@ -55,8 +56,9 @@ class TestInMemoryTaskRepositoryEdgeCases:
         """Updating nonexistent task doesn't raise error."""
         repository = InMemoryTaskRepository()
         now = datetime.now(timezone.utc)
+        task_id = uuid4()
         task = Task(
-            id=9999,
+            id=task_id,
             title="Nonexistent",
             status=TaskStatus.TODO,
             created_at=now,
@@ -66,7 +68,7 @@ class TestInMemoryTaskRepositoryEdgeCases:
         repository.update(task)
 
         # Verify task was not added
-        assert repository.get(9999) is None
+        assert repository.get(task_id) is None
 
 
 class TestInMemoryNoteRepositoryEdgeCases:
@@ -76,8 +78,9 @@ class TestInMemoryNoteRepositoryEdgeCases:
         """Updating nonexistent note doesn't raise error."""
         repository = InMemoryNoteRepository()
         now = datetime.now(timezone.utc)
+        note_id = uuid4()
         note = Note(
-            id=9999,
+            id=note_id,
             title="Nonexistent",
             created_at=now,
             updated_at=now,
@@ -86,7 +89,7 @@ class TestInMemoryNoteRepositoryEdgeCases:
         repository.update(note)
 
         # Verify note was not added
-        assert repository.get(9999) is None
+        assert repository.get(note_id) is None
 
 
 class TestInMemoryEventRepositoryEdgeCases:
@@ -96,8 +99,9 @@ class TestInMemoryEventRepositoryEdgeCases:
         """Updating nonexistent event doesn't raise error."""
         repository = InMemoryEventRepository()
         now = datetime.now(timezone.utc)
+        event_id = uuid4()
         event = Event(
-            id=9999,
+            id=event_id,
             title="Nonexistent",
             occurred_at=now,
             created_at=now,
@@ -107,7 +111,7 @@ class TestInMemoryEventRepositoryEdgeCases:
         repository.update(event)
 
         # Verify event was not added
-        assert repository.get(9999) is None
+        assert repository.get(event_id) is None
 
 
 class TestInMemoryProjectRepository(ProjectRepositoryContract):
@@ -135,8 +139,9 @@ class TestInMemoryProjectRepositoryEdgeCases:
         """Updating nonexistent project doesn't raise error."""
         repository = InMemoryProjectRepository()
         now = datetime.now(timezone.utc)
+        project_id = uuid4()
         project = Project(
-            id=9999,
+            id=project_id,
             name="Nonexistent",
             created_at=now,
             updated_at=now,
@@ -145,4 +150,4 @@ class TestInMemoryProjectRepositoryEdgeCases:
         repository.update(project)
 
         # Verify project was not added
-        assert repository.get(9999) is None
+        assert repository.get(project_id) is None

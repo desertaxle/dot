@@ -47,10 +47,13 @@ task_tags = Table(
     "task_tags",
     Base.metadata,
     Column(
-        "task_id", Integer, ForeignKey("task.id", ondelete="CASCADE"), primary_key=True
+        "task_id",
+        String(36),
+        ForeignKey("task.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
     Column(
-        "tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+        "tag_id", String(36), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
     ),
 )
 
@@ -58,10 +61,13 @@ note_tags = Table(
     "note_tags",
     Base.metadata,
     Column(
-        "note_id", Integer, ForeignKey("note.id", ondelete="CASCADE"), primary_key=True
+        "note_id",
+        String(36),
+        ForeignKey("note.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
     Column(
-        "tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+        "tag_id", String(36), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
     ),
 )
 
@@ -70,12 +76,12 @@ event_tags = Table(
     Base.metadata,
     Column(
         "event_id",
-        Integer,
+        String(36),
         ForeignKey("event.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
-        "tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+        "tag_id", String(36), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
     ),
 )
 
@@ -85,7 +91,7 @@ class Project(Base):
 
     __tablename__ = "project"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     type: Mapped[ProjectType] = mapped_column(
@@ -129,7 +135,7 @@ class Task(Base):
 
     __tablename__ = "task"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     status: Mapped[TaskStatus] = mapped_column(
@@ -174,7 +180,7 @@ class Note(Base):
 
     __tablename__ = "note"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -204,7 +210,7 @@ class Event(Base):
 
     __tablename__ = "event"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[Optional[str]] = mapped_column(Text)
     occurred_at: Mapped[datetime] = mapped_column(
@@ -237,7 +243,7 @@ class Tag(Base):
 
     __tablename__ = "tag"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
@@ -259,18 +265,18 @@ class LogEntry(Base):
 
     __tablename__ = "log_entry"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    project_id: Mapped[int] = mapped_column(
-        ForeignKey("project.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("project.id", ondelete="CASCADE"), nullable=False
     )
-    task_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("task.id", ondelete="CASCADE")
+    task_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("task.id", ondelete="CASCADE")
     )
-    note_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("note.id", ondelete="CASCADE")
+    note_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("note.id", ondelete="CASCADE")
     )
-    event_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("event.id", ondelete="CASCADE")
+    event_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("event.id", ondelete="CASCADE")
     )
     entry_date: Mapped[datetime] = mapped_column(
         DateTime, nullable=False
@@ -317,9 +323,12 @@ class TaskRecurrence(Base):
 
     __tablename__ = "task_recurrence"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    task_id: Mapped[int] = mapped_column(
-        ForeignKey("task.id", ondelete="CASCADE"), unique=True, nullable=False
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("task.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
     )
     cron_expression: Mapped[str] = mapped_column(
         String(255), nullable=False
@@ -348,15 +357,15 @@ class Migration(Base):
 
     __tablename__ = "migration"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    task_id: Mapped[int] = mapped_column(
-        ForeignKey("task.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("task.id", ondelete="CASCADE"), nullable=False
     )
-    from_log_entry_id: Mapped[int] = mapped_column(
-        ForeignKey("log_entry.id", ondelete="CASCADE"), nullable=False
+    from_log_entry_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("log_entry.id", ondelete="CASCADE"), nullable=False
     )
-    to_log_entry_id: Mapped[int] = mapped_column(
-        ForeignKey("log_entry.id", ondelete="CASCADE"), nullable=False
+    to_log_entry_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("log_entry.id", ondelete="CASCADE"), nullable=False
     )
     migrated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

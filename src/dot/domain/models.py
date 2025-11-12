@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+from uuid import UUID
 
 import whenever
 
@@ -40,8 +41,8 @@ class TaskStatus(str, Enum):
 class Task:
     """A task or todo item - pure domain model."""
 
-    id: int
     title: str
+    id: Optional[UUID] = None
     status: TaskStatus = TaskStatus.TODO
     description: Optional[str] = None
     priority: Optional[int] = None
@@ -53,8 +54,8 @@ class Task:
 class Note:
     """A note or information entry - pure domain model."""
 
-    id: int
     title: str
+    id: Optional[UUID] = None
     content: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -64,9 +65,9 @@ class Note:
 class Event:
     """An event that happened - pure domain model."""
 
-    id: int
     title: str
     occurred_at: datetime
+    id: Optional[UUID] = None
     content: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -76,8 +77,8 @@ class Event:
 class Project:
     """A project or container for log entries - pure domain model."""
 
-    id: int
     name: str
+    id: Optional[UUID] = None
     description: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

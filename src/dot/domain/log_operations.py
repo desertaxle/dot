@@ -1,6 +1,7 @@
 """Business logic operations for logs and log entries."""
 
 from dataclasses import dataclass, field
+from uuid import UUID
 
 import whenever
 
@@ -12,11 +13,11 @@ from dot.domain.models import DailyLog, MonthlyLog, WeeklyLog
 class LogEntry:
     """A reference to an entry (task, note, or event) in a log."""
 
-    id: int
-    log_id: int
-    task_id: int | None = None
-    note_id: int | None = None
-    event_id: int | None = None
+    log_id: UUID
+    id: UUID | None = None
+    task_id: UUID | None = None
+    note_id: UUID | None = None
+    event_id: UUID | None = None
     entry_date: whenever.Date = field(
         default_factory=lambda: whenever.Instant.now().to_system_tz().date()
     )
@@ -40,15 +41,15 @@ class LogEntry:
 class Migration:
     """Record of a task being migrated from one log to another."""
 
-    id: int
-    task_id: int
-    from_log_entry_id: int
-    to_log_entry_id: int
+    id: UUID
+    task_id: UUID
+    from_log_entry_id: UUID
+    to_log_entry_id: UUID
     migrated_at: whenever.Instant = field(default_factory=whenever.Instant.now)
 
 
 def create_daily_log(
-    id: int,
+    id: UUID,
     name: str,
     date: whenever.Date | None = None,
     description: str | None = None,
@@ -71,7 +72,7 @@ def create_daily_log(
 
 
 def create_weekly_log(
-    id: int,
+    id: UUID,
     name: str,
     week_start: whenever.Date | None = None,
     description: str | None = None,
@@ -96,7 +97,7 @@ def create_weekly_log(
 
 
 def create_monthly_log(
-    id: int,
+    id: UUID,
     name: str,
     year: int | None = None,
     month: int | None = None,
@@ -128,9 +129,9 @@ def create_monthly_log(
 
 
 def add_task_to_log(
-    log_entry_id: int,
-    log_id: int,
-    task_id: int,
+    log_entry_id: UUID,
+    log_id: UUID,
+    task_id: UUID,
     entry_date: whenever.Date | None = None,
 ) -> LogEntry:
     """Add a task to a log.
@@ -156,9 +157,9 @@ def add_task_to_log(
 
 
 def add_note_to_log(
-    log_entry_id: int,
-    log_id: int,
-    note_id: int,
+    log_entry_id: UUID,
+    log_id: UUID,
+    note_id: UUID,
     entry_date: whenever.Date | None = None,
 ) -> LogEntry:
     """Add a note to a log.
@@ -184,9 +185,9 @@ def add_note_to_log(
 
 
 def add_event_to_log(
-    log_entry_id: int,
-    log_id: int,
-    event_id: int,
+    log_entry_id: UUID,
+    log_id: UUID,
+    event_id: UUID,
     entry_date: whenever.Date | None = None,
 ) -> LogEntry:
     """Add an event to a log.
@@ -212,10 +213,10 @@ def add_event_to_log(
 
 
 def migrate_task(
-    migration_id: int,
-    task_id: int,
-    from_log_entry_id: int,
-    to_log_entry_id: int,
+    migration_id: UUID,
+    task_id: UUID,
+    from_log_entry_id: UUID,
+    to_log_entry_id: UUID,
 ) -> Migration:
     """Record a task migration from one log to another.
 
