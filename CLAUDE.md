@@ -128,7 +128,7 @@ Pure dataclasses representing business entities:
 - `TaskStatus` enum - TODO, DONE, CANCELLED
 - `Task` - Title, description, status, priority, timestamps
 - `Note` - Title, content, timestamps
-- `Event` - Title, content, occurred_at timestamp
+- `Event` - Title, content, occurred_at timestamp (defaults to current datetime)
 
 **Important:** These have NO database dependencies and should remain pure.
 

@@ -693,6 +693,26 @@ class TestEventAddCommand:
             assert len(events) == 1
             assert events[0].content == "Team sync"
 
+    def test_add_event_without_date(self, capsys):
+        """Test adding an event without date defaults to current datetime."""
+        with patch("dot.__main__.get_uow") as mock_get_uow:
+            mock_uow = InMemoryUnitOfWork()
+            mock_get_uow.return_value = mock_uow
+
+            # Record time before and after command
+            before = datetime.now(timezone.utc)
+            app(
+                ["events", "add", "Quick note"],
+                result_action="return_value",
+            )
+            after = datetime.now(timezone.utc)
+
+            events = list(mock_uow.events.list())
+            assert len(events) == 1
+            assert events[0].title == "Quick note"
+            # Verify occurred_at is between before and after
+            assert before <= events[0].occurred_at <= after
+
 
 class TestEventListCommand:
     """Tests for the event list command."""

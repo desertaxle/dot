@@ -66,7 +66,7 @@ class Event:
     """An event that happened - pure domain model."""
 
     title: str
-    occurred_at: datetime
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     id: Optional[UUID] = None
     content: Optional[str] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

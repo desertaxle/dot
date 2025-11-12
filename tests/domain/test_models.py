@@ -183,6 +183,16 @@ class TestEvent:
 
         assert event.occurred_at == past
 
+    def test_event_defaults_to_current_datetime(self):
+        """Event occurred_at defaults to current datetime when not specified."""
+        before = datetime.now(timezone.utc)
+        event = Event(title="Event with default time")
+        after = datetime.now(timezone.utc)
+
+        # occurred_at should be between before and after
+        assert before <= event.occurred_at <= after
+        assert event.occurred_at.tzinfo == timezone.utc
+
 
 class TestLogDefaults:
     """Tests for Log subclass default factories."""

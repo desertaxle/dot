@@ -335,22 +335,30 @@ def update(  # noqa: F811
 
 
 @events_app.command
-def add(title: str, date: str, content: Optional[str] = None):  # noqa: F811
+def add(title: str, date: Optional[str] = None, content: Optional[str] = None):  # noqa: F811
     """Add a new event."""
     try:
-        occurred_at = datetime.fromisoformat(date)
-        # Ensure timezone-aware datetime
-        if occurred_at.tzinfo is None:
-            occurred_at = occurred_at.replace(tzinfo=datetime.now().astimezone().tzinfo)
+        if date is not None:
+            occurred_at = datetime.fromisoformat(date)
+            # Ensure timezone-aware datetime
+            if occurred_at.tzinfo is None:
+                occurred_at = occurred_at.replace(
+                    tzinfo=datetime.now().astimezone().tzinfo
+                )
+            event = Event(title=title, occurred_at=occurred_at, content=content)
+        else:
+            # Use default occurred_at (current datetime)
+            event = Event(title=title, content=content)
 
         with get_uow() as uow:
-            event = Event(title=title, occurred_at=occurred_at, content=content)
             uow.events.add(event)
             uow.commit()  # Commit to get database-assigned ID
 
             # Add to daily log for the event's date
             event_date = (
-                whenever.Instant.from_py_datetime(occurred_at).to_system_tz().date()
+                whenever.Instant.from_py_datetime(event.occurred_at)
+                .to_system_tz()
+                .date()
             )
             add_to_daily_log(uow, event_date, event_id=event.id)
             uow.commit()
