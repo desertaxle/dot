@@ -468,6 +468,7 @@ class SQLAlchemyLogEntryRepository(LogEntryRepository):
             note_id=UUID(orm_log_entry.note_id) if orm_log_entry.note_id else None,
             event_id=UUID(orm_log_entry.event_id) if orm_log_entry.event_id else None,
             entry_date=entry_date,
+            created_at=orm_log_entry.created_at,
         )
         return log_entry
 

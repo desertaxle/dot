@@ -478,29 +478,31 @@ def today():
             # Get all log entries for this log
             entries = uow.log_entries.get_by_log_id(daily_log.id)
 
-            # Collect tasks, notes, and events from entries
-            tasks = []
-            notes = []
-            events = []
+            # Collect items with their timestamps for sorting
+            items_with_timestamps = []
 
             for entry in entries:
                 if entry.task_id:
                     task = uow.tasks.get(entry.task_id)
                     if task:
-                        tasks.append(task)
+                        items_with_timestamps.append((entry.created_at, task))
                 elif entry.note_id:
                     note = uow.notes.get(entry.note_id)
                     if note:
-                        notes.append(note)
+                        items_with_timestamps.append((entry.created_at, note))
                 elif entry.event_id:
                     event = uow.events.get(entry.event_id)
                     if event:
-                        events.append(event)
+                        items_with_timestamps.append((entry.created_at, event))
+
+            # Sort chronologically by when added to log
+            items_with_timestamps.sort(key=lambda x: x[0])
+            sorted_items = [item for _, item in items_with_timestamps]
 
             # Convert whenever.Date to datetime for display
             log_datetime = datetime(log_date.year, log_date.month, log_date.day)
 
-            tree = build_log_tree(log_datetime, tasks, notes, events)
+            tree = build_log_tree(log_datetime, sorted_items)
             console.print(tree)
     except Exception as e:
         print_error(f"Error showing today's log: {e}")
@@ -528,29 +530,31 @@ def show(date: Optional[str] = None):  # noqa: F811
             # Get all log entries for this log
             entries = uow.log_entries.get_by_log_id(daily_log.id)
 
-            # Collect tasks, notes, and events from entries
-            tasks = []
-            notes = []
-            events = []
+            # Collect items with their timestamps for sorting
+            items_with_timestamps = []
 
             for entry in entries:
                 if entry.task_id:
                     task = uow.tasks.get(entry.task_id)
                     if task:
-                        tasks.append(task)
+                        items_with_timestamps.append((entry.created_at, task))
                 elif entry.note_id:
                     note = uow.notes.get(entry.note_id)
                     if note:
-                        notes.append(note)
+                        items_with_timestamps.append((entry.created_at, note))
                 elif entry.event_id:
                     event = uow.events.get(entry.event_id)
                     if event:
-                        events.append(event)
+                        items_with_timestamps.append((entry.created_at, event))
+
+            # Sort chronologically by when added to log
+            items_with_timestamps.sort(key=lambda x: x[0])
+            sorted_items = [item for _, item in items_with_timestamps]
 
             # Convert whenever.Date to datetime for display
             log_datetime = datetime(log_date.year, log_date.month, log_date.day)
 
-            tree = build_log_tree(log_datetime, tasks, notes, events)
+            tree = build_log_tree(log_datetime, sorted_items)
             console.print(tree)
     except Exception as e:
         print_error(f"Error showing log: {e}")

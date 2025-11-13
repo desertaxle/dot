@@ -24,6 +24,7 @@
 - ✅ 100% code coverage enforcement (CI/CD gate + local checks)
 - ✅ All warnings eliminated from test suite
 - ✅ Automatic coverage reporting on every pytest run
+- ✅ Daily log views with chronological ordering (sorted by LogEntry.created_at)
 
 ### Project Status
 - **Tests:** All passing with no warnings

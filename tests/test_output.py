@@ -241,7 +241,7 @@ def test_build_event_tree_multiple_events():
 def test_build_log_tree_empty():
     """Test build_log_tree with no entries."""
     date = datetime(2024, 1, 15)
-    tree = build_log_tree(date, [], [], [])
+    tree = build_log_tree(date, [])
 
     assert "Daily Log: 2024-01-15" in tree.label
     assert len(tree.children) == 1  # "(No entries)" message
@@ -262,9 +262,9 @@ def test_build_log_tree_with_tasks():
         )
     ]
 
-    tree = build_log_tree(date, tasks, [], [])
+    tree = build_log_tree(date, tasks)
     assert "Daily Log: 2024-01-15" in tree.label
-    assert len(tree.children) == 1  # Tasks section
+    assert len(tree.children) == 1  # One task entry
 
 
 def test_build_log_tree_with_notes():
@@ -273,9 +273,9 @@ def test_build_log_tree_with_notes():
     date = datetime(2024, 1, 15)
     notes = [Note(id=uuid4(), title="Note 1", created_at=now, updated_at=now)]
 
-    tree = build_log_tree(date, [], notes, [])
+    tree = build_log_tree(date, notes)
     assert "Daily Log: 2024-01-15" in tree.label
-    assert len(tree.children) == 1  # Notes section
+    assert len(tree.children) == 1  # One note entry
 
 
 def test_build_log_tree_with_events():
@@ -288,35 +288,77 @@ def test_build_log_tree_with_events():
         )
     ]
 
-    tree = build_log_tree(date, [], [], events)
+    tree = build_log_tree(date, events)
     assert "Daily Log: 2024-01-15" in tree.label
-    assert len(tree.children) == 1  # Events section
+    assert len(tree.children) == 1  # One event entry
 
 
 def test_build_log_tree_mixed():
     """Test build_log_tree with tasks, notes, and events."""
     now = datetime.now(timezone.utc)
     date = datetime(2024, 1, 15)
-    tasks = [
-        Task(
-            id=uuid4(),
-            title="Task 1",
-            status=TaskStatus.TODO,
-            priority=2,
-            created_at=now,
-            updated_at=now,
-        )
-    ]
-    notes = [Note(id=uuid4(), title="Note 1", created_at=now, updated_at=now)]
-    events = [
-        Event(
-            id=uuid4(), title="Event 1", occurred_at=now, created_at=now, updated_at=now
-        )
-    ]
+    task = Task(
+        id=uuid4(),
+        title="Task 1",
+        status=TaskStatus.TODO,
+        priority=2,
+        created_at=now,
+        updated_at=now,
+    )
+    note = Note(id=uuid4(), title="Note 1", created_at=now, updated_at=now)
+    event = Event(
+        id=uuid4(), title="Event 1", occurred_at=now, created_at=now, updated_at=now
+    )
 
-    tree = build_log_tree(date, tasks, notes, events)
+    # Combine into single chronological list
+    entries = [task, note, event]
+
+    tree = build_log_tree(date, entries)
     assert "Daily Log: 2024-01-15" in tree.label
-    assert len(tree.children) == 3  # Tasks, Notes, and Events sections
+    assert len(tree.children) == 3  # Three entries (task, note, event)
+
+
+def test_build_log_tree_chronological_order():
+    """Test build_log_tree maintains chronological order with multiple entries of same type."""
+    now = datetime.now(timezone.utc)
+    date = datetime(2024, 1, 15)
+
+    # Create multiple entries including consecutive events
+    event1 = Event(
+        id=uuid4(),
+        title="Morning event",
+        occurred_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+    task = Task(
+        id=uuid4(),
+        title="Midday task",
+        status=TaskStatus.TODO,
+        created_at=now,
+        updated_at=now,
+    )
+    event2 = Event(
+        id=uuid4(),
+        title="Afternoon event",
+        occurred_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+    event3 = Event(
+        id=uuid4(),
+        title="Evening event",
+        occurred_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    # Entries in chronological order - note consecutive events at the end
+    entries = [event1, task, event2, event3]
+
+    tree = build_log_tree(date, entries)
+    assert "Daily Log: 2024-01-15" in tree.label
+    assert len(tree.children) == 4
 
 
 def test_build_task_detail_panel():

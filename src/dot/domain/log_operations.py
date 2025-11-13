@@ -1,6 +1,7 @@
 """Business logic operations for logs and log entries."""
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from uuid import UUID
 
 import whenever
@@ -21,6 +22,7 @@ class LogEntry:
     entry_date: whenever.Date = field(
         default_factory=lambda: whenever.Instant.now().to_system_tz().date()
     )
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __post_init__(self) -> None:
         """Validate that exactly one of task/note/event is set."""

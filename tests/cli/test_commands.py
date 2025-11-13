@@ -1001,7 +1001,6 @@ class TestLogsShowCommand:
             captured = capsys.readouterr()
 
             assert "Test task" in captured.out
-            assert "Task" in captured.out
 
     def test_show_log_with_note(self, capsys):
         """Test showing a log with a note entry."""
@@ -1035,7 +1034,6 @@ class TestLogsShowCommand:
             captured = capsys.readouterr()
 
             assert "Test note" in captured.out
-            assert "Note" in captured.out
 
     def test_show_log_with_event(self, capsys):
         """Test showing a log with an event entry."""
@@ -1078,7 +1076,6 @@ class TestLogsShowCommand:
             captured = capsys.readouterr()
 
             assert "Test event" in captured.out
-            assert "Event" in captured.out
 
     def test_show_log_with_multiple_entries(self, capsys):
         """Test showing a log with multiple entries."""

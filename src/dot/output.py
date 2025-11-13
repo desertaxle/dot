@@ -143,45 +143,31 @@ def build_event_tree(events: list[Event]) -> Tree:
 
 def build_log_tree(
     date: datetime,
-    tasks: list[Task],
-    notes: list[Note],
-    events: list[Event],
+    entries: list[Task | Note | Event],
 ) -> Tree:
-    """Build a Tree structure for displaying daily log entries."""
+    """Build a Tree structure for displaying daily log entries chronologically."""
     date_str = date.strftime("%Y-%m-%d")
     tree = Tree(f"📖 [bold]Daily Log: {date_str}[/bold]")
 
-    # Check if there are any entries
-    has_entries = bool(tasks or notes or events)
-
-    if not has_entries:
+    if not entries:
         tree.add("[metadata](No entries)[/metadata]")
         return tree
 
-    # Add tasks section
-    if tasks:
-        tasks_node = tree.add("[bold task]Tasks[/bold task]")
-        for task in tasks:
-            status_style = _get_status_style(task.status)
-            status_symbol = _get_status_symbol(task.status)
-            label = f"[{status_style}]{status_symbol}[/{status_style}] {task.title}"
-            if task.priority:
-                label += f" [metadata][P{task.priority}][/metadata]"
-            tasks_node.add(label)
-
-    # Add notes section
-    if notes:
-        notes_node = tree.add("[bold note]Notes[/bold note]")
-        for note in notes:
-            notes_node.add(f"[note]{note.title}[/note]")
-
-    # Add events section
-    if events:
-        events_node = tree.add("[bold event]Events[/bold event]")
-        for event in events:
-            occurred_str = event.occurred_at.strftime("%H:%M")
-            events_node.add(
-                f"[event]{event.title}[/event] [metadata]- {occurred_str}[/metadata]"
+    # Add entries chronologically (already sorted by caller)
+    for entry in entries:
+        if isinstance(entry, Task):
+            status_style = _get_status_style(entry.status)
+            status_symbol = _get_status_symbol(entry.status)
+            label = f"[{status_style}]{status_symbol}[/{status_style}] {entry.title}"
+            if entry.priority:
+                label += f" [metadata][P{entry.priority}][/metadata]"
+            tree.add(label)
+        elif isinstance(entry, Note):
+            tree.add(f"[note]{entry.title}[/note]")
+        elif isinstance(entry, Event):  # pragma: no branch
+            occurred_str = entry.occurred_at.strftime("%H:%M")
+            tree.add(
+                f"[event]{entry.title}[/event] [metadata]- {occurred_str}[/metadata]"
             )
 
     return tree
