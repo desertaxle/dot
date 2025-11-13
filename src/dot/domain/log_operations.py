@@ -2,12 +2,16 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import whenever
 
 from dot.domain.date_helpers import get_week_start
 from dot.domain.models import DailyLog, MonthlyLog, WeeklyLog
+
+if TYPE_CHECKING:
+    pass
 
 
 @dataclass
@@ -237,3 +241,9 @@ def migrate_task(
         from_log_entry_id=from_log_entry_id,
         to_log_entry_id=to_log_entry_id,
     )
+
+
+# Phase 2: Higher-level migration operations (require MigrationRepository)
+# - migrate_task_to_date(): Full workflow to migrate task to different date
+# - get_migration_history(): Query migration chain for a task
+# These will be implemented when MigrationRepository is added

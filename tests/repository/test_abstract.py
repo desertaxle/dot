@@ -15,6 +15,9 @@ from dot.repository.abstract import (
     TaskRepository,
 )
 
+# MigrationRepository to be added in Phase 2
+# from dot.repository.abstract import MigrationRepository
+
 
 class TaskRepositoryContract:
     """Contract that all TaskRepository implementations must follow."""
@@ -514,3 +517,7 @@ class LogEntryRepositoryContract:
         log2_entries = self.repository.get_by_log_id(log2_id)
         assert len(log2_entries) == 1
         assert log2_entries[0].log_id == log2_id
+
+
+# Phase 2: MigrationRepository contract tests - to be added when implementing
+# MigrationRepository abstract interface and implementations

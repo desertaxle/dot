@@ -254,3 +254,7 @@ class TestMigrateTask:
         assert mig1.from_log_entry_id == entry_10
         assert mig2.from_log_entry_id == entry_20
         assert mig1.to_log_entry_id == mig2.from_log_entry_id
+
+
+# Phase 2: Tests for higher-level migration operations
+# Will be added when migrate_task_to_date() and get_migration_history() are implemented
