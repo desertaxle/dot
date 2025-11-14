@@ -9,6 +9,7 @@ from dot.domain.models import Event, Note, Project, Task, TaskStatus
 from dot.repository.memory import (
     InMemoryEventRepository,
     InMemoryLogEntryRepository,
+    InMemoryMigrationRepository,
     InMemoryNoteRepository,
     InMemoryProjectRepository,
     InMemoryTaskRepository,
@@ -16,6 +17,7 @@ from dot.repository.memory import (
 from tests.repository.test_abstract import (
     EventRepositoryContract,
     LogEntryRepositoryContract,
+    MigrationRepositoryContract,
     NoteRepositoryContract,
     ProjectRepositoryContract,
     TaskRepositoryContract,
@@ -151,3 +153,38 @@ class TestInMemoryProjectRepositoryEdgeCases:
 
         # Verify project was not added
         assert repository.get(project_id) is None
+
+
+class TestInMemoryMigrationRepository(MigrationRepositoryContract):
+    """Test InMemoryMigrationRepository against the contract."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Set up test repository."""
+        self.repository = InMemoryMigrationRepository()
+
+
+class TestInMemoryMigrationRepositoryEdgeCases:
+    """Test edge cases for InMemoryMigrationRepository."""
+
+    def test_add_migration_without_id_auto_generates(self):
+        """Adding migration without ID auto-generates UUID."""
+        from dot.domain.log_operations import Migration
+
+        repository = InMemoryMigrationRepository()
+        # Create migration without ID (dataclass defaults to None)
+        migration = Migration(
+            id=uuid4(),  # type: ignore[arg-type]
+            task_id=uuid4(),
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+        # Set ID to None to test auto-generation
+        migration.id = None  # type: ignore[assignment]
+
+        repository.add(migration)
+
+        # Verify ID was auto-generated
+        assert migration.id is not None
+        retrieved = repository.get(migration.id)
+        assert retrieved is not None

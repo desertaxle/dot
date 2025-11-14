@@ -5,18 +5,16 @@ from uuid import uuid4
 
 import whenever
 
-from dot.domain.log_operations import LogEntry
+from dot.domain.log_operations import LogEntry, Migration
 from dot.domain.models import DailyLog, Event, Note, Project, Task, TaskStatus
 from dot.repository.abstract import (
     EventRepository,
     LogEntryRepository,
+    MigrationRepository,
     NoteRepository,
     ProjectRepository,
     TaskRepository,
 )
-
-# MigrationRepository to be added in Phase 2
-# from dot.repository.abstract import MigrationRepository
 
 
 class TaskRepositoryContract:
@@ -519,5 +517,99 @@ class LogEntryRepositoryContract:
         assert log2_entries[0].log_id == log2_id
 
 
-# Phase 2: MigrationRepository contract tests - to be added when implementing
-# MigrationRepository abstract interface and implementations
+class MigrationRepositoryContract:
+    """Contract that all MigrationRepository implementations must follow."""
+
+    repository: MigrationRepository
+
+    def test_add_migration(self):
+        """Repository can add a migration."""
+        migration_id = uuid4()
+        task_id = uuid4()
+        from_entry_id = uuid4()
+        to_entry_id = uuid4()
+        migration = Migration(
+            id=migration_id,
+            task_id=task_id,
+            from_log_entry_id=from_entry_id,
+            to_log_entry_id=to_entry_id,
+        )
+
+        self.repository.add(migration)
+        retrieved = self.repository.get(migration_id)
+
+        assert retrieved is not None
+        assert retrieved.id == migration_id
+        assert retrieved.task_id == task_id
+        assert retrieved.from_log_entry_id == from_entry_id
+        assert retrieved.to_log_entry_id == to_entry_id
+
+    def test_get_nonexistent_migration(self):
+        """Repository returns None for nonexistent migration."""
+        result = self.repository.get(uuid4())
+        assert result is None
+
+    def test_list_migrations(self):
+        """Repository can list all migrations."""
+        migration1_id = uuid4()
+        migration2_id = uuid4()
+        task_id = uuid4()
+        migration1 = Migration(
+            id=migration1_id,
+            task_id=task_id,
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+        migration2 = Migration(
+            id=migration2_id,
+            task_id=task_id,
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+
+        self.repository.add(migration1)
+        self.repository.add(migration2)
+
+        migrations = self.repository.list()
+        assert len(migrations) == 2
+        assert any(m.id == migration1_id for m in migrations)
+        assert any(m.id == migration2_id for m in migrations)
+
+    def test_get_by_task_id(self):
+        """Repository can get all migrations for a specific task."""
+        task1_id = uuid4()
+        task2_id = uuid4()
+        migration1_id = uuid4()
+        migration2_id = uuid4()
+        migration3_id = uuid4()
+
+        migration1 = Migration(
+            id=migration1_id,
+            task_id=task1_id,
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+        migration2 = Migration(
+            id=migration2_id,
+            task_id=task1_id,
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+        migration3 = Migration(
+            id=migration3_id,
+            task_id=task2_id,
+            from_log_entry_id=uuid4(),
+            to_log_entry_id=uuid4(),
+        )
+
+        self.repository.add(migration1)
+        self.repository.add(migration2)
+        self.repository.add(migration3)
+
+        task1_migrations = self.repository.get_by_task_id(task1_id)
+        assert len(task1_migrations) == 2
+        assert all(m.task_id == task1_id for m in task1_migrations)
+
+        task2_migrations = self.repository.get_by_task_id(task2_id)
+        assert len(task2_migrations) == 1
+        assert task2_migrations[0].task_id == task2_id

@@ -5,11 +5,12 @@ from uuid import UUID, uuid4
 
 import whenever
 
-from dot.domain.log_operations import LogEntry
+from dot.domain.log_operations import LogEntry, Migration
 from dot.domain.models import DailyLog, Event, Note, Project, Task
 from dot.repository.abstract import (
     EventRepository,
     LogEntryRepository,
+    MigrationRepository,
     NoteRepository,
     ProjectRepository,
     TaskRepository,
@@ -193,3 +194,30 @@ class InMemoryLogEntryRepository(LogEntryRepository):
         entries = [e for e in self._entries.values() if e.log_id == log_id]
         # Sort chronologically
         return sorted(entries, key=lambda e: e.entry_date)
+
+
+class InMemoryMigrationRepository(MigrationRepository):
+    """In-memory implementation of MigrationRepository."""
+
+    def __init__(self):
+        """Initialize with empty storage."""
+        self._migrations: Dict[UUID, Migration] = {}
+
+    def add(self, migration: Migration) -> None:
+        """Add a migration to storage."""
+        # Auto-assign ID if not set
+        if migration.id is None:
+            migration.id = uuid4()
+        self._migrations[migration.id] = migration
+
+    def get(self, migration_id: UUID) -> Optional[Migration]:
+        """Get a migration by ID."""
+        return self._migrations.get(migration_id)
+
+    def list(self) -> List[Migration]:
+        """List all migrations."""
+        return list(self._migrations.values())
+
+    def get_by_task_id(self, task_id: UUID) -> List[Migration]:
+        """Get all migrations for a specific task."""
+        return [m for m in self._migrations.values() if m.task_id == task_id]

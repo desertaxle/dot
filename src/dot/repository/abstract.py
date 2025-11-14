@@ -6,7 +6,7 @@ from uuid import UUID
 
 import whenever
 
-from dot.domain.log_operations import LogEntry
+from dot.domain.log_operations import LogEntry, Migration
 from dot.domain.models import DailyLog, Event, Note, Project, Task
 
 
@@ -170,5 +170,36 @@ class LogEntryRepository(ABC):
 
         Returns:
             List of log entries for the log, ordered chronologically.
+        """
+        pass  # pragma: no cover
+
+
+class MigrationRepository(ABC):
+    """Abstract repository for Migration entities."""
+
+    @abstractmethod
+    def add(self, migration: Migration) -> None:
+        """Add a migration to the repository."""
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get(self, migration_id: UUID) -> Optional[Migration]:
+        """Get a migration by ID."""
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def list(self) -> List[Migration]:
+        """List all migrations."""
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_by_task_id(self, task_id: UUID) -> List[Migration]:
+        """Get all migrations for a specific task.
+
+        Args:
+            task_id: The ID of the task.
+
+        Returns:
+            List of migrations for the task.
         """
         pass  # pragma: no cover
