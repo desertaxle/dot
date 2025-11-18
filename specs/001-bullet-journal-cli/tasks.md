@@ -73,13 +73,13 @@
 - [X] T020 [US1] Implement InMemoryTaskRepository in src/dot/repository/memory.py (depends on T014, T019)
 - [X] T021 [US1] Implement SQLAlchemyTaskRepository in src/dot/repository/sqlalchemy.py (with ORM ↔ Domain conversion, depends on T014, T019)
 - [X] T022 [US1] Write repository implementation tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (run contract tests against both implementations)
-- [ ] T023 [US1] Create cyclopts app in src/dot/__main__.py and implement task create command using rich for output
-- [ ] T024 [US1] Implement task list command in src/dot/__main__.py with optional status filtering using rich tables
-- [ ] T025 [US1] Implement task done command in src/dot/__main__.py (mark task as DONE)
-- [ ] T026 [US1] Implement task cancel command in src/dot/__main__.py (mark task as CANCELLED)
-- [ ] T027 [US1] Write CLI tests in tests/cli/test_commands.py (test all task commands with in-memory repository)
-- [ ] T028 [US1] Write integration tests in tests/integration/test_workflows.py (full task workflow with real database: create → list → done → list)
-- [ ] T029 [US1] Verify 100% code coverage maintained for all User Story 1 code
+- [X] T023 [US1] Create cyclopts app in src/dot/__main__.py and implement task create command using rich for output
+- [X] T024 [US1] Implement task list command in src/dot/__main__.py with optional status filtering using rich tables
+- [X] T025 [US1] Implement task done command in src/dot/__main__.py (mark task as DONE)
+- [X] T026 [US1] Implement task cancel command in src/dot/__main__.py (mark task as CANCELLED)
+- [X] T027 [US1] Write CLI tests in tests/cli/test_commands.py (test all task commands with in-memory repository)
+- [X] T028 [US1] Write integration tests in tests/integration/test_workflows.py (full task workflow with real database: create → list → done → list)
+- [X] T029 [US1] Verify 100% code coverage maintained for all User Story 1 code
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently (MVP complete!)
 

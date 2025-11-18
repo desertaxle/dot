@@ -193,3 +193,34 @@ def test_task_repository_list_by_date_empty(task_repository: TaskRepository) -> 
     future_date = date.today() + timedelta(days=365)
     tasks = task_repository.list_by_date(future_date)
     assert tasks == []
+
+
+def test_task_repository_update_nonexistent(task_repository: TaskRepository) -> None:
+    """Test updating a task that doesn't exist (should be a no-op)."""
+    nonexistent_task = Task(
+        id=uuid4(),
+        title="Nonexistent",
+        description=None,
+        status=TaskStatus.TODO,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+
+    # Update should not raise an error, just silently fail
+    task_repository.update(nonexistent_task)
+
+    # Task should still not exist
+    retrieved = task_repository.get(nonexistent_task.id)
+    assert retrieved is None
+
+
+def test_task_repository_delete_nonexistent(task_repository: TaskRepository) -> None:
+    """Test deleting a task that doesn't exist (should be a no-op)."""
+    nonexistent_id = uuid4()
+
+    # Delete should not raise an error
+    task_repository.delete(nonexistent_id)
+
+    # Verify repository is still empty
+    tasks = task_repository.list()
+    assert len(tasks) == 0
