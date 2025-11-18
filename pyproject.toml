@@ -9,8 +9,8 @@ dependencies = [
     "croniter>=2.0.0",
     "pydantic-settings>=2.11.0",
     "sqlalchemy>=2.0.0",
-    "whenever>=0.6.0",
     "rich>=14.2.0",
+    "whenever>=0.9.3",
 ]
 
 [build-system]
