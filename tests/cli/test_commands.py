@@ -500,3 +500,320 @@ def test_task_done_ambiguous_id(mock_settings, mock_session, mock_repository):
         # Check that an ambiguous ID error was printed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Ambiguous ID" in str(call) for call in calls)
+
+
+# Event Command Tests
+
+
+def test_event_create_success(mock_settings, mock_session):
+    """Test creating an event successfully."""
+    from dot.domain.models import Event
+
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_event") as mock_create,
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup
+        from datetime import datetime
+
+        event = Event(
+            id=uuid4(),
+            title="Team Meeting",
+            description=None,
+            occurred_at=datetime(2025, 11, 18, 14, 30),
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        mock_create.return_value = event
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the create command
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["create", "Team Meeting"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_create.assert_called_once()
+        mock_event_repository.add.assert_called_once()
+        mock_console.print.assert_any_call(
+            "✓ Event created: Team Meeting", style="green"
+        )
+
+
+def test_event_create_with_description(mock_settings, mock_session):
+    """Test creating an event with a description."""
+    from dot.domain.models import Event
+
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_event") as mock_create,
+        patch("dot.__main__.console"),
+    ):
+        # Setup
+        from datetime import datetime
+
+        event = Event(
+            id=uuid4(),
+            title="Team Meeting",
+            description="Discuss Q4 goals",
+            occurred_at=datetime(2025, 11, 18, 14, 30),
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        mock_create.return_value = event
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the create command with description
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["create", "Team Meeting", "--description", "Discuss Q4 goals"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_create.assert_called_once()
+
+
+def test_event_create_with_date(mock_settings, mock_session):
+    """Test creating an event with a specific date."""
+    from dot.domain.models import Event
+
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_event") as mock_create,
+        patch("dot.__main__.console"),
+    ):
+        # Setup
+        from datetime import datetime
+
+        event = Event(
+            id=uuid4(),
+            title="Team Meeting",
+            description=None,
+            occurred_at=datetime(2025, 12, 1, 0, 0),
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        mock_create.return_value = event
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the create command with date (YYYY-MM-DD format)
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["create", "Team Meeting", "--date", "2025-12-01"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_create.assert_called_once()
+
+
+def test_event_create_validation_error(mock_settings):
+    """Test event creation with validation error."""
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_event") as mock_create,
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup - create_event raises ValueError
+        mock_create.side_effect = ValueError("Title cannot be empty")
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the create command
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["create", ""])
+
+        # Assertions
+        assert exc_info.value.code == 1
+        mock_console.print.assert_called_with(
+            "✗ Error: Title cannot be empty", style="red"
+        )
+
+
+def test_event_list_empty(mock_settings, mock_session):
+    """Test listing events when none exist."""
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup - no events
+        mock_event_repository.list.return_value = []
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the list command
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["list"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_console.print.assert_called_with("No events found.")
+
+
+def test_event_list_with_events(mock_settings, mock_session):
+    """Test listing events when some exist."""
+    from dot.domain.models import Event
+
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console"),
+    ):
+        # Setup - create sample events
+        from datetime import datetime
+
+        events = [
+            Event(
+                id=uuid4(),
+                title="Event 1",
+                description=None,
+                occurred_at=datetime(2025, 11, 17, 10, 30),
+                created_at=datetime(2025, 11, 17, 10, 30),
+            ),
+            Event(
+                id=uuid4(),
+                title="Event 2",
+                description=None,
+                occurred_at=datetime(2025, 11, 18, 11, 0),
+                created_at=datetime(2025, 11, 18, 11, 0),
+            ),
+        ]
+        mock_event_repository.list.return_value = events
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the list command
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["list"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_event_repository.list.assert_called_once()
+
+
+def test_event_list_by_date(mock_settings, mock_session):
+    """Test listing events filtered by date."""
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console"),
+    ):
+        # Setup
+        mock_event_repository.list_by_date.return_value = []
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the list command with date filter
+        with pytest.raises(SystemExit):
+            event_app(["list", "--date", "2025-11-18"])
+
+        # Assertions
+        mock_event_repository.list_by_date.assert_called_once()
+
+
+def test_event_list_by_range(mock_settings, mock_session):
+    """Test listing events filtered by date range."""
+    mock_event_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyEventRepository",
+            return_value=mock_event_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console"),
+    ):
+        # Setup
+        mock_event_repository.list_by_range.return_value = []
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the list command with range filter (colon-separated format)
+        with pytest.raises(SystemExit):
+            event_app(["list", "--range", "2025-11-01:2025-11-30"])
+
+        # Assertions
+        mock_event_repository.list_by_range.assert_called_once()
+
+
+def test_event_list_invalid_date_format(mock_settings):
+    """Test listing events with invalid date format."""
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Import and run command
+        from dot.__main__ import event_app
+
+        # Run the list command with invalid date
+        with pytest.raises(SystemExit) as exc_info:
+            event_app(["list", "--date", "invalid-date"])
+
+        # Assertions
+        assert exc_info.value.code == 1
+        # Check that an error was printed
+        calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("Error" in str(call) for call in calls)

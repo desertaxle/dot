@@ -140,12 +140,12 @@ class SQLAlchemyEventRepository(EventRepository):
         return self._to_domain(event_orm)
 
     def list(self) -> list[Event]:
-        """List all events."""
-        event_orms = self._session.query(EventORM).all()
+        """List all events, sorted chronologically by occurred_at."""
+        event_orms = self._session.query(EventORM).order_by(EventORM.occurred_at).all()
         return [self._to_domain(event_orm) for event_orm in event_orms]
 
     def list_by_date(self, target_date: date) -> list[Event]:
-        """List events that occurred on a specific date."""
+        """List events that occurred on a specific date, sorted chronologically."""
         from datetime import datetime, timedelta
 
         start_of_day = datetime.combine(target_date, datetime.min.time())
@@ -155,12 +155,13 @@ class SQLAlchemyEventRepository(EventRepository):
             self._session.query(EventORM)
             .filter(EventORM.occurred_at >= start_of_day)
             .filter(EventORM.occurred_at < end_of_day)
+            .order_by(EventORM.occurred_at)
             .all()
         )
         return [self._to_domain(event_orm) for event_orm in event_orms]
 
     def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
-        """List events within a date range (inclusive)."""
+        """List events within a date range (inclusive), sorted chronologically."""
         from datetime import datetime, timedelta
 
         start_of_range = datetime.combine(start_date, datetime.min.time())
@@ -172,6 +173,7 @@ class SQLAlchemyEventRepository(EventRepository):
             self._session.query(EventORM)
             .filter(EventORM.occurred_at >= start_of_range)
             .filter(EventORM.occurred_at < end_of_range)
+            .order_by(EventORM.occurred_at)
             .all()
         )
         return [self._to_domain(event_orm) for event_orm in event_orms]

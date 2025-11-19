@@ -184,11 +184,11 @@ def test_task_workflow_list_by_date(temp_db):
         repo.add(task1)
         repo.add(task2)
 
-        # List by today's date
-        from datetime import date
+        # List by today's date (UTC, since create_task uses utcnow)
+        from datetime import datetime
 
-        today = date.today()
-        today_tasks = repo.list_by_date(today)
+        today_utc = datetime.utcnow().date()
+        today_tasks = repo.list_by_date(today_utc)
 
         assert len(today_tasks) == 2
         assert any(t.id == task1.id for t in today_tasks)
@@ -197,7 +197,7 @@ def test_task_workflow_list_by_date(temp_db):
         # List by a different date - should be empty
         from datetime import timedelta
 
-        yesterday = today - timedelta(days=1)
+        yesterday = today_utc - timedelta(days=1)
         yesterday_tasks = repo.list_by_date(yesterday)
         assert len(yesterday_tasks) == 0
 
@@ -298,3 +298,229 @@ def test_task_workflow_update_preserves_id(temp_db):
 
     finally:
         session.close()
+
+
+# Event Workflow Tests
+
+
+def test_event_workflow_create_and_list(temp_db):
+    """Test complete event workflow: create → list."""
+
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create an event
+        event = create_event("Team Meeting", description="Quarterly review")
+        repo.add(event)
+
+        # List all events
+        all_events = repo.list()
+        assert len(all_events) == 1
+        assert all_events[0].title == "Team Meeting"
+        assert all_events[0].description == "Quarterly review"
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_list_by_date(temp_db):
+    """Test listing events by date."""
+    from datetime import datetime, timedelta
+
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create events on different dates
+        today = datetime.now()
+        yesterday = today - timedelta(days=1)
+
+        event1 = create_event("Today's Event", occurred_at=today)
+        event2 = create_event("Yesterday's Event", occurred_at=yesterday)
+
+        repo.add(event1)
+        repo.add(event2)
+
+        # List events for today
+        today_events = repo.list_by_date(today.date())
+        assert len(today_events) == 1
+        assert today_events[0].title == "Today's Event"
+
+        # List events for yesterday
+        yesterday_events = repo.list_by_date(yesterday.date())
+        assert len(yesterday_events) == 1
+        assert yesterday_events[0].title == "Yesterday's Event"
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_list_by_range(temp_db):
+    """Test listing events by date range."""
+    from datetime import datetime, timedelta
+
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create events across multiple dates
+        base_date = datetime(2025, 11, 15, 10, 0)
+
+        event1 = create_event("Event 1", occurred_at=base_date)
+        event2 = create_event("Event 2", occurred_at=base_date + timedelta(days=1))
+        event3 = create_event("Event 3", occurred_at=base_date + timedelta(days=2))
+        event4 = create_event("Event 4", occurred_at=base_date + timedelta(days=10))
+
+        repo.add(event1)
+        repo.add(event2)
+        repo.add(event3)
+        repo.add(event4)
+
+        # Query range that includes first 3 events
+        start_date = base_date.date()
+        end_date = (base_date + timedelta(days=2)).date()
+
+        range_events = repo.list_by_range(start_date, end_date)
+        assert len(range_events) == 3
+        assert any(e.title == "Event 1" for e in range_events)
+        assert any(e.title == "Event 2" for e in range_events)
+        assert any(e.title == "Event 3" for e in range_events)
+        assert not any(e.title == "Event 4" for e in range_events)
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_get_by_id(temp_db):
+    """Test creating and retrieving an event by ID."""
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create and add event
+        event = create_event("Conference", description="Annual tech conference")
+        repo.add(event)
+
+        # Retrieve by ID
+        retrieved_event = repo.get(event.id)
+        assert retrieved_event is not None
+        assert retrieved_event.id == event.id
+        assert retrieved_event.title == event.title
+        assert retrieved_event.description == "Annual tech conference"
+
+        # Try to retrieve non-existent event
+        from uuid import uuid4
+
+        non_existent = repo.get(uuid4())
+        assert non_existent is None
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_delete(temp_db):
+    """Test deleting an event."""
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create and add event
+        event = create_event("Event to delete")
+        repo.add(event)
+
+        # Verify it exists
+        assert len(repo.list()) == 1
+
+        # Delete it
+        repo.delete(event.id)
+
+        # Verify it's gone
+        assert len(repo.list()) == 0
+        assert repo.get(event.id) is None
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_chronological_sorting(temp_db):
+    """Test that events are sorted chronologically by occurred_at."""
+    from datetime import datetime, timedelta
+
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    session = temp_db()
+
+    try:
+        repo = SQLAlchemyEventRepository(session)
+
+        # Create events in non-chronological order
+        base_date = datetime(2025, 11, 15, 10, 0)
+
+        event2 = create_event(
+            "Second Event", occurred_at=base_date + timedelta(hours=2)
+        )
+        event1 = create_event("First Event", occurred_at=base_date)
+        event3 = create_event("Third Event", occurred_at=base_date + timedelta(hours=4))
+
+        # Add in random order
+        repo.add(event2)
+        repo.add(event1)
+        repo.add(event3)
+
+        # List should be chronologically sorted
+        events = repo.list()
+        assert len(events) == 3
+        assert events[0].title == "First Event"
+        assert events[1].title == "Second Event"
+        assert events[2].title == "Third Event"
+
+    finally:
+        session.close()
+
+
+def test_event_workflow_persistence(temp_db):
+    """Test that events persist across sessions."""
+    from dot.domain.operations import create_event
+    from dot.repository.sqlalchemy import SQLAlchemyEventRepository
+
+    # First session: create and save event
+    session1 = temp_db()
+    repo1 = SQLAlchemyEventRepository(session1)
+
+    event = create_event("Persistent event", description="This should persist")
+    repo1.add(event)
+    event_id = event.id
+    session1.close()
+
+    # Second session: retrieve the same event
+    session2 = temp_db()
+    repo2 = SQLAlchemyEventRepository(session2)
+
+    retrieved_event = repo2.get(event_id)
+    assert retrieved_event is not None
+    assert retrieved_event.id == event_id
+    assert retrieved_event.title == "Persistent event"
+    assert retrieved_event.description == "This should persist"
+    session2.close()

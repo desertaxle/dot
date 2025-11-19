@@ -58,22 +58,24 @@ class InMemoryEventRepository(EventRepository):
         return self._events.get(event_id)
 
     def list(self) -> list[Event]:
-        """List all events."""
-        return list(self._events.values())
+        """List all events, sorted chronologically by occurred_at."""
+        return sorted(self._events.values(), key=lambda e: e.occurred_at)
 
     def list_by_date(self, date: date) -> list[Event]:
-        """List events that occurred on a specific date."""
-        return [
+        """List events that occurred on a specific date, sorted chronologically."""
+        events = [
             event for event in self._events.values() if event.occurred_at.date() == date
         ]
+        return sorted(events, key=lambda e: e.occurred_at)
 
     def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
-        """List events within a date range (inclusive)."""
-        return [
+        """List events within a date range (inclusive), sorted chronologically."""
+        events = [
             event
             for event in self._events.values()
             if start_date <= event.occurred_at.date() <= end_date
         ]
+        return sorted(events, key=lambda e: e.occurred_at)
 
     def delete(self, event_id: UUID) -> None:
         """Delete an event."""

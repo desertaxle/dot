@@ -110,11 +110,11 @@
 - [X] T039 [US2] Write repository tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (contract tests)
 - [X] T040 [US2] Implement event create command in src/dot/__main__.py (with --date option, defaults to now)
 - [X] T041 [US2] Implement event list command in src/dot/__main__.py (with --date and --range options, chronological sorting)
-- [ ] T042 [US2] Write CLI tests in tests/cli/test_commands.py (test event create, list with filters)
-- [ ] T043 [US2] Write integration tests in tests/integration/test_workflows.py (event workflow with database)
-- [ ] T044 [US2] Verify 100% code coverage maintained for User Story 2
+- [X] T042 [US2] Write CLI tests in tests/cli/test_commands.py (test event create, list with filters)
+- [X] T043 [US2] Write integration tests in tests/integration/test_workflows.py (event workflow with database)
+- [X] T044 [US2] Verify 100% code coverage maintained for User Story 2
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: ✅ At this point, User Stories 1 AND 2 should both work independently
 
 ---
 
