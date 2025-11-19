@@ -81,3 +81,40 @@ def event_repository(request, tmp_path: Path):
         Base.metadata.drop_all(engine)
     else:
         raise ValueError(f"Unknown repository type: {request.param}")
+
+
+@pytest.fixture(params=["memory", "sqlalchemy"])
+def note_repository(request, tmp_path: Path):
+    """Provide both in-memory and SQLAlchemy note repository implementations.
+
+    This fixture parametrizes tests to run against both implementations,
+    ensuring they conform to the same contract.
+    """
+    if request.param == "memory":
+        from dot.repository.memory import InMemoryNoteRepository
+
+        yield InMemoryNoteRepository()
+    elif request.param == "sqlalchemy":
+        # Set up temporary database
+        settings = Settings(dot_home=tmp_path / "test_dot")
+        factory = get_session_factory(settings)
+
+        # Create tables
+        engine = factory.kw["bind"]
+        Base.metadata.create_all(engine)
+
+        # Create session
+        session: Session = factory()
+
+        # Create repository
+        from dot.repository.sqlalchemy import SQLAlchemyNoteRepository
+
+        repo = SQLAlchemyNoteRepository(session)
+
+        yield repo
+
+        # Cleanup
+        session.close()
+        Base.metadata.drop_all(engine)
+    else:
+        raise ValueError(f"Unknown repository type: {request.param}")

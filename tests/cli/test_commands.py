@@ -1,5 +1,6 @@
 """Tests for CLI commands."""
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -817,3 +818,509 @@ def test_event_list_invalid_date_format(mock_settings):
         # Check that an error was printed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Error" in str(call) for call in calls)
+
+
+# Note Command Tests
+
+
+def test_note_create_success(mock_settings, mock_session):
+    """Test creating a note successfully."""
+    from dot.domain.models import Note
+
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_note") as mock_create,
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup
+        from datetime import datetime
+
+        note = Note(
+            id=uuid4(),
+            title="Meeting Notes",
+            content="Discussed project timeline",
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        mock_create.return_value = note
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the create command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["create", "Meeting Notes", "Discussed project timeline"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_create.assert_called_once_with(
+            "Meeting Notes", "Discussed project timeline"
+        )
+        mock_note_repository.add.assert_called_once()
+        mock_console.print.assert_any_call(
+            "✓ Note created: Meeting Notes", style="green"
+        )
+
+
+def test_note_create_validation_error(mock_settings):
+    """Test note creation with validation error."""
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__._init_database"),
+        patch("dot.domain.operations.create_note") as mock_create,
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup - create_note raises ValueError
+        mock_create.side_effect = ValueError("Content cannot be empty")
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the create command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["create", "Title", ""])
+
+        # Assertions
+        assert exc_info.value.code == 1
+        mock_console.print.assert_called_with(
+            "✗ Error: Content cannot be empty", style="red"
+        )
+
+
+def test_note_list_empty(mock_settings, mock_session):
+    """Test listing notes when none exist."""
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup - no notes
+        mock_note_repository.list.return_value = []
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the list command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["list"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_console.print.assert_called_with("No notes found.")
+
+
+def test_note_list_with_notes(mock_settings, mock_session):
+    """Test listing notes when some exist."""
+    from dot.domain.models import Note
+
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console"),
+    ):
+        # Setup - create sample notes
+        from datetime import datetime
+
+        notes = [
+            Note(
+                id=uuid4(),
+                title="Note 1",
+                content="Content 1",
+                created_at=datetime(2025, 11, 17, 10, 30),
+            ),
+            Note(
+                id=uuid4(),
+                title="Note 2",
+                content="Content 2",
+                created_at=datetime(2025, 11, 18, 11, 0),
+            ),
+        ]
+        mock_note_repository.list.return_value = notes
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the list command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["list"])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_note_repository.list.assert_called_once()
+
+
+def test_note_show_success(mock_settings, mock_session):
+    """Test showing a note by ID."""
+    from dot.domain.models import Note
+
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup
+        from datetime import datetime
+
+        note_id = uuid4()
+        note = Note(
+            id=note_id,
+            title="Meeting Notes",
+            content="Discussed project timeline",
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        mock_note_repository.get.return_value = note
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the show command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["show", str(note_id)])
+
+        # Assertions
+        assert exc_info.value.code == 0
+        mock_note_repository.get.assert_called_once_with(note_id)
+        mock_console.print.assert_called_once()
+
+
+def test_note_show_with_short_id(mock_settings, mock_session):
+    """Test showing a note using short ID."""
+    from dot.domain.models import Note
+
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console"),
+    ):
+        # Setup
+        from datetime import datetime
+
+        note_id = uuid4()
+        note = Note(
+            id=note_id,
+            title="Meeting Notes",
+            content="Discussed project timeline",
+            created_at=datetime(2025, 11, 18, 10, 0),
+        )
+        # get() returns None for short ID
+        mock_note_repository.get.return_value = None
+        # list() returns all notes for short ID matching
+        mock_note_repository.list.return_value = [note]
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the show command with short ID
+        short_id = str(note_id)[:8]
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["show", short_id])
+
+        # Assertions
+        assert exc_info.value.code == 0
+
+
+def test_note_show_not_found(mock_settings, mock_session):
+    """Test showing a non-existent note."""
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup
+        mock_note_repository.get.return_value = None
+        mock_note_repository.list.return_value = []
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the show command
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["show", "nonexistent"])
+
+        # Assertions
+        assert exc_info.value.code == 1
+        mock_console.print.assert_called_with(
+            "✗ Error: Note not found: nonexistent", style="red"
+        )
+
+
+def test_note_show_ambiguous_id(mock_settings, mock_session):
+    """Test showing a note with ambiguous short ID."""
+    from dot.domain.models import Note
+    from uuid import UUID
+
+    mock_note_repository = MagicMock()
+
+    with (
+        patch("dot.__main__.Settings", return_value=mock_settings),
+        patch("dot.__main__.get_session") as mock_get_session,
+        patch(
+            "dot.repository.sqlalchemy.SQLAlchemyNoteRepository",
+            return_value=mock_note_repository,
+        ),
+        patch("dot.__main__._init_database"),
+        patch("dot.__main__.console") as mock_console,
+    ):
+        # Setup - create two notes with IDs starting with same prefix
+        from datetime import datetime
+
+        note1_id = UUID("abc12345-1234-1234-1234-123456789012")
+        note2_id = UUID("abc98765-5678-5678-5678-567890123456")
+        notes = [
+            Note(
+                id=note1_id,
+                title="Note 1",
+                content="Content 1",
+                created_at=datetime(2025, 11, 18, 10, 0),
+            ),
+            Note(
+                id=note2_id,
+                title="Note 2",
+                content="Content 2",
+                created_at=datetime(2025, 11, 18, 11, 0),
+            ),
+        ]
+        mock_note_repository.get.return_value = None
+        mock_note_repository.list.return_value = notes
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import note_app
+
+        # Run the show command with ambiguous ID prefix
+        common_prefix = "abc"
+
+        with pytest.raises(SystemExit) as exc_info:
+            note_app(["show", common_prefix])
+
+        # Assertions
+        assert exc_info.value.code == 1
+        # Check that an ambiguous ID error was printed
+        calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("Ambiguous ID" in str(call) for call in calls)
+
+
+# Log Command Tests
+
+
+@patch("dot.__main__.console")
+@patch("dot.__main__.get_session")
+@patch("dot.__main__._init_database")
+@patch("dot.__main__.Settings")
+def test_log_for_today(
+    mock_settings_class, mock_init_db, mock_get_session, mock_console
+):
+    """Test viewing daily log for today."""
+
+    from dot.domain.operations import create_event, create_note, create_task
+    from dot.repository.memory import (
+        InMemoryEventRepository,
+        InMemoryNoteRepository,
+        InMemoryTaskRepository,
+    )
+
+    # Setup mocks
+    mock_settings = MagicMock()
+    mock_settings.db_path = Path("/tmp/test.db")
+    mock_settings_class.return_value = mock_settings
+
+    mock_session = MagicMock()
+
+    # Create in-memory repositories
+    task_repo = InMemoryTaskRepository()
+    event_repo = InMemoryEventRepository()
+    note_repo = InMemoryNoteRepository()
+
+    # Add test items
+    task = create_task("Buy groceries")
+    event = create_event("Team meeting")
+    note = create_note("Meeting notes", "Important discussion")
+
+    task_repo.add(task)
+    event_repo.add(event)
+    note_repo.add(note)
+
+    # Mock repository creation
+    with (
+        patch("dot.__main__.SQLAlchemyTaskRepository", return_value=task_repo),
+        patch("dot.__main__.SQLAlchemyEventRepository", return_value=event_repo),
+        patch("dot.__main__.SQLAlchemyNoteRepository", return_value=note_repo),
+    ):
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import log
+
+        # Run the log command for today
+        with pytest.raises(SystemExit) as exc_info:
+            log(None)
+
+        # Assertions
+        assert exc_info.value.code == 0
+        # Verify output contains daily log header
+        calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("Daily Log" in str(call) for call in calls)
+        assert any("Tasks" in str(call) for call in calls)
+        assert any("Events" in str(call) for call in calls)
+        assert any("Notes" in str(call) for call in calls)
+
+
+@patch("dot.__main__.console")
+@patch("dot.__main__.get_session")
+@patch("dot.__main__._init_database")
+@patch("dot.__main__.Settings")
+def test_log_for_specific_date(
+    mock_settings_class, mock_init_db, mock_get_session, mock_console
+):
+    """Test viewing daily log for a specific date."""
+
+    from dot.repository.memory import (
+        InMemoryEventRepository,
+        InMemoryNoteRepository,
+        InMemoryTaskRepository,
+    )
+
+    # Setup mocks
+    mock_settings = MagicMock()
+    mock_settings.db_path = Path("/tmp/test.db")
+    mock_settings_class.return_value = mock_settings
+
+    mock_session = MagicMock()
+
+    # Create in-memory repositories
+    task_repo = InMemoryTaskRepository()
+    event_repo = InMemoryEventRepository()
+    note_repo = InMemoryNoteRepository()
+
+    # Mock repository creation
+    with (
+        patch("dot.__main__.SQLAlchemyTaskRepository", return_value=task_repo),
+        patch("dot.__main__.SQLAlchemyEventRepository", return_value=event_repo),
+        patch("dot.__main__.SQLAlchemyNoteRepository", return_value=note_repo),
+    ):
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import log
+
+        # Run the log command for a specific date
+        with pytest.raises(SystemExit) as exc_info:
+            log("2025-11-17")
+
+        # Assertions
+        assert exc_info.value.code == 0
+        # Verify date is displayed
+        calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("2025-11-17" in str(call) for call in calls)
+
+
+@patch("dot.__main__.console")
+@patch("dot.__main__.get_session")
+@patch("dot.__main__._init_database")
+@patch("dot.__main__.Settings")
+def test_log_empty_date(
+    mock_settings_class, mock_init_db, mock_get_session, mock_console
+):
+    """Test viewing daily log for a date with no items."""
+    from dot.repository.memory import (
+        InMemoryEventRepository,
+        InMemoryNoteRepository,
+        InMemoryTaskRepository,
+    )
+
+    # Setup mocks
+    mock_settings = MagicMock()
+    mock_settings.db_path = Path("/tmp/test.db")
+    mock_settings_class.return_value = mock_settings
+
+    mock_session = MagicMock()
+
+    # Create empty in-memory repositories
+    task_repo = InMemoryTaskRepository()
+    event_repo = InMemoryEventRepository()
+    note_repo = InMemoryNoteRepository()
+
+    # Mock repository creation
+    with (
+        patch("dot.__main__.SQLAlchemyTaskRepository", return_value=task_repo),
+        patch("dot.__main__.SQLAlchemyEventRepository", return_value=event_repo),
+        patch("dot.__main__.SQLAlchemyNoteRepository", return_value=note_repo),
+    ):
+        mock_get_session.return_value = iter([mock_session])
+
+        # Import and run command
+        from dot.__main__ import log
+
+        # Run the log command for today (which has no items)
+        with pytest.raises(SystemExit) as exc_info:
+            log(None)
+
+        # Assertions
+        assert exc_info.value.code == 0
+        # Verify message for no entries
+        calls = [str(call) for call in mock_console.print.call_args_list]
+        assert any("No entries for this date" in str(call) for call in calls)
+
+
+@patch("dot.__main__.console")
+def test_log_invalid_date_format(mock_console):
+    """Test log command with invalid date format."""
+    from dot.__main__ import log
+
+    # Run with invalid date
+    with pytest.raises(SystemExit) as exc_info:
+        log("invalid-date")
+
+    # Assertions
+    assert exc_info.value.code == 1
+    # Check for error message
+    calls = [str(call) for call in mock_console.print.call_args_list]
+    assert any("Invalid date format" in str(call) for call in calls)

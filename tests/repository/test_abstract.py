@@ -396,3 +396,128 @@ def test_event_repository_delete_nonexistent(event_repository) -> None:
     # Verify repository is still empty
     events = event_repository.list()
     assert len(events) == 0
+
+
+# NoteRepository Contract Tests
+
+
+def test_note_repository_add_and_get(note_repository) -> None:
+    """Test adding and retrieving a note."""
+    from dot.domain.models import Note
+
+    note = Note(
+        id=uuid4(),
+        title="Meeting Notes",
+        content="Discussed project timeline and deliverables",
+        created_at=datetime.utcnow(),
+    )
+
+    note_repository.add(note)
+    retrieved = note_repository.get(note.id)
+
+    assert retrieved is not None
+    assert retrieved.id == note.id
+    assert retrieved.title == note.title
+    assert retrieved.content == note.content
+
+
+def test_note_repository_get_nonexistent(note_repository) -> None:
+    """Test getting a note that doesn't exist."""
+    nonexistent_id = uuid4()
+    note = note_repository.get(nonexistent_id)
+    assert note is None
+
+
+def test_note_repository_list_empty(note_repository) -> None:
+    """Test listing notes when repository is empty."""
+    notes = note_repository.list()
+    assert len(notes) == 0
+
+
+def test_note_repository_list_all(note_repository) -> None:
+    """Test listing all notes."""
+    from dot.domain.models import Note
+
+    note1 = Note(
+        id=uuid4(),
+        title="Note 1",
+        content="Content 1",
+        created_at=datetime.utcnow(),
+    )
+    note2 = Note(
+        id=uuid4(),
+        title="Note 2",
+        content="Content 2",
+        created_at=datetime.utcnow(),
+    )
+
+    note_repository.add(note1)
+    note_repository.add(note2)
+
+    notes = note_repository.list()
+    assert len(notes) == 2
+    note_ids = {n.id for n in notes}
+    assert note1.id in note_ids
+    assert note2.id in note_ids
+
+
+def test_note_repository_list_by_date(note_repository) -> None:
+    """Test listing notes created on a specific date."""
+    from dot.domain.models import Note
+
+    today = datetime.utcnow()
+    yesterday = today - timedelta(days=1)
+
+    note_today = Note(
+        id=uuid4(),
+        title="Today's Note",
+        content="Content",
+        created_at=today,
+    )
+    note_yesterday = Note(
+        id=uuid4(),
+        title="Yesterday's Note",
+        content="Content",
+        created_at=yesterday,
+    )
+
+    note_repository.add(note_today)
+    note_repository.add(note_yesterday)
+
+    today_notes = note_repository.list_by_date(today.date())
+    assert len(today_notes) == 1
+    assert today_notes[0].id == note_today.id
+
+    yesterday_notes = note_repository.list_by_date(yesterday.date())
+    assert len(yesterday_notes) == 1
+    assert yesterday_notes[0].id == note_yesterday.id
+
+
+def test_note_repository_delete(note_repository) -> None:
+    """Test deleting a note."""
+    from dot.domain.models import Note
+
+    note = Note(
+        id=uuid4(),
+        title="To Delete",
+        content="Content",
+        created_at=datetime.utcnow(),
+    )
+
+    note_repository.add(note)
+    assert note_repository.get(note.id) is not None
+
+    note_repository.delete(note.id)
+    assert note_repository.get(note.id) is None
+
+
+def test_note_repository_delete_nonexistent(note_repository) -> None:
+    """Test deleting a note that doesn't exist (should be a no-op)."""
+    nonexistent_id = uuid4()
+
+    # Delete should not raise an error
+    note_repository.delete(nonexistent_id)
+
+    # Verify repository is still empty
+    notes = note_repository.list()
+    assert len(notes) == 0

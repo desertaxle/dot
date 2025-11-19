@@ -1,6 +1,7 @@
 """CLI entry point for Dot bullet journal application."""
 
 import sys
+from datetime import date
 from uuid import UUID
 
 from cyclopts import App
@@ -9,9 +10,18 @@ from rich.table import Table
 
 from dot.db import get_session
 from dot.domain.models import TaskStatus
-from dot.domain.operations import create_task, mark_cancelled, mark_done
+from dot.domain.operations import (
+    build_daily_log,
+    create_task,
+    mark_cancelled,
+    mark_done,
+)
 from dot.models import Base
-from dot.repository.sqlalchemy import SQLAlchemyTaskRepository
+from dot.repository.sqlalchemy import (
+    SQLAlchemyEventRepository,
+    SQLAlchemyNoteRepository,
+    SQLAlchemyTaskRepository,
+)
 from dot.settings import Settings
 
 # Initialize console for output
@@ -332,9 +342,7 @@ def create_event_cmd(
             # Success output
             console.print(f"✓ Event created: {event.title}", style="green")
             console.print(f"  ID: {event.id}")
-            console.print(
-                f"  Occurred: {event.occurred_at.strftime('%Y-%m-%d %H:%M')}"
-            )
+            console.print(f"  Occurred: {event.occurred_at.strftime('%Y-%m-%d %H:%M')}")
             sys.exit(0)
         finally:
             try:
@@ -447,11 +455,302 @@ def list_events_cmd(
         sys.exit(1)
 
 
+# Create note subcommand group
+note_app = App(name="note", help="Manage notes")
+
+
+@note_app.command(name="create")
+def create_note_cmd(title: str, content: str) -> None:
+    """Create a new note.
+
+    Args:
+        title: Note title (required)
+        content: Note content (required)
+    """
+    try:
+        from dot.domain.operations import create_note
+        from dot.repository.sqlalchemy import SQLAlchemyNoteRepository
+
+        # Create domain note
+        note = create_note(title, content)
+
+        # Initialize database and save
+        settings = Settings()
+        _init_database(settings)
+
+        session_gen = get_session(settings)
+        session = next(session_gen)
+        try:
+            repo = SQLAlchemyNoteRepository(session)
+            repo.add(note)
+
+            # Success output
+            console.print(f"✓ Note created: {note.title}", style="green")
+            console.print(f"  ID: {note.id}")
+            sys.exit(0)
+        finally:
+            try:
+                next(session_gen)
+            except StopIteration:
+                pass
+
+    except ValueError as e:
+        console.print(f"✗ Error: {e}", style="red")
+        sys.exit(1)
+
+
+@note_app.command(name="list")
+def list_notes_cmd() -> None:
+    """List all notes."""
+    try:
+        from dot.repository.sqlalchemy import SQLAlchemyNoteRepository
+
+        # Initialize database and fetch notes
+        settings = Settings()
+        _init_database(settings)
+
+        session_gen = get_session(settings)
+        session = next(session_gen)
+        try:
+            repo = SQLAlchemyNoteRepository(session)
+            notes = repo.list()
+
+            if not notes:
+                console.print("No notes found.")
+                sys.exit(0)
+
+            # Create and populate table
+            table = Table(title="Notes")
+            table.add_column("ID", style="cyan")
+            table.add_column("Title")
+            table.add_column("Created")
+
+            for note in notes:
+                # Format ID (show first 8 chars)
+                short_id = str(note.id)[:8]
+
+                # Format datetime
+                created_str = note.created_at.strftime("%Y-%m-%d %H:%M")
+
+                table.add_row(short_id, note.title, created_str)
+
+            console.print(table)
+            sys.exit(0)
+        finally:
+            try:
+                next(session_gen)
+            except StopIteration:
+                pass
+
+    except Exception as e:
+        console.print(f"✗ Error: {e}", style="red")
+        sys.exit(1)
+
+
+@note_app.command(name="show")
+def show_note_cmd(note_id: str) -> None:
+    """Show full content of a note.
+
+    Args:
+        note_id: Note ID (full UUID or first 8 characters)
+    """
+    try:
+        from rich.panel import Panel
+
+        from dot.repository.sqlalchemy import SQLAlchemyNoteRepository
+
+        # Initialize database
+        settings = Settings()
+        _init_database(settings)
+
+        session_gen = get_session(settings)
+        session = next(session_gen)
+        try:
+            repo = SQLAlchemyNoteRepository(session)
+
+            # Try to find note by full UUID or short ID
+            note = None
+            try:
+                # Try as full UUID first
+                full_uuid = UUID(note_id)
+                note = repo.get(full_uuid)
+            except ValueError:
+                # Not a valid UUID, try as short ID
+                all_notes = repo.list()
+                matches = [n for n in all_notes if str(n.id).startswith(note_id)]
+
+                if len(matches) == 0:
+                    console.print(f"✗ Error: Note not found: {note_id}", style="red")
+                    sys.exit(1)
+                elif len(matches) > 1:
+                    console.print(
+                        f"✗ Error: Ambiguous ID. Multiple notes match '{note_id}':",
+                        style="red",
+                    )
+                    for n in matches:
+                        console.print(f"  - {n.id} ({n.title})")
+                    console.print("\n  Please use a longer ID prefix.")
+                    sys.exit(1)
+                else:
+                    note = matches[0]
+
+            if note is None:
+                console.print(f"✗ Error: Note not found: {note_id}", style="red")
+                sys.exit(1)
+
+            # Display note in a panel
+            assert note is not None  # Type narrowing for type checker
+            created_str = note.created_at.strftime("%Y-%m-%d %H:%M")
+            panel = Panel(
+                f"[dim]Created: {created_str}[/dim]\n\n{note.content}",
+                title=note.title,
+                border_style="cyan",
+            )
+            console.print(panel)
+            sys.exit(0)
+        finally:
+            try:
+                next(session_gen)
+            except StopIteration:
+                pass
+
+    except Exception as e:
+        console.print(f"✗ Error: {e}", style="red")
+        sys.exit(1)
+
+
 # Register task commands
 app.command(task_app)
 
 # Register event commands
 app.command(event_app)
+
+# Register note commands
+app.command(note_app)
+
+
+@app.command
+def log(target_date: str | None = None) -> None:
+    """View daily log for a specific date.
+
+    Args:
+        target_date: Date to view (YYYY-MM-DD format). Defaults to today if not specified.
+    """
+    try:
+        # Parse target date or use today
+        if target_date:
+            try:
+                log_date = date.fromisoformat(target_date)
+            except ValueError:
+                console.print(
+                    "✗ Error: Invalid date format. Use ISO format (YYYY-MM-DD)",
+                    style="red",
+                )
+                sys.exit(1)
+        else:
+            # Use UTC date to match how items are created (with datetime.utcnow())
+            from datetime import datetime
+
+            log_date = datetime.utcnow().date()
+
+        # Get settings and initialize database
+        settings = Settings()
+        _init_database(settings)
+
+        # Get session
+        session_gen = get_session(settings)
+        session = next(session_gen)
+
+        try:
+            # Get repositories
+            task_repo = SQLAlchemyTaskRepository(session)
+            event_repo = SQLAlchemyEventRepository(session)
+            note_repo = SQLAlchemyNoteRepository(session)
+
+            # Query items for the date
+            tasks = task_repo.list_by_date(log_date)
+            events = event_repo.list_by_date(log_date)
+            notes = note_repo.list_by_date(log_date)
+
+            # Build daily log
+            log_entry = build_daily_log(tasks, events, notes, log_date)
+
+            # Display daily log
+            console.print(f"\nDaily Log - {log_date}")
+            console.print("━" * 50)
+
+            # Check if there are any items
+            if not log_entry.tasks and not log_entry.events and not log_entry.notes:
+                console.print("\nNo entries for this date.\n")
+                sys.exit(0)
+
+            # Display tasks
+            if log_entry.tasks:
+                console.print("\n[bold]Tasks[/bold]")
+                task_table = Table(show_header=True, header_style="cyan")
+                task_table.add_column("ID", style="cyan", width=10)
+                task_table.add_column("Title")
+                task_table.add_column("Status")
+
+                for task in log_entry.tasks:
+                    status_style = {
+                        TaskStatus.TODO: "white",
+                        TaskStatus.DONE: "green",
+                        TaskStatus.CANCELLED: "red",
+                    }.get(task.status, "white")
+
+                    task_table.add_row(
+                        str(task.id)[:8],
+                        task.title,
+                        f"[{status_style}]{task.status.value}[/{status_style}]",
+                    )
+
+                console.print(task_table)
+
+            # Display events
+            if log_entry.events:
+                console.print("\n[bold]Events[/bold]")
+                event_table = Table(show_header=True, header_style="cyan")
+                event_table.add_column("ID", style="cyan", width=10)
+                event_table.add_column("Title")
+                event_table.add_column("Time")
+
+                for event in log_entry.events:
+                    event_table.add_row(
+                        str(event.id)[:8],
+                        event.title,
+                        event.occurred_at.strftime("%Y-%m-%d %H:%M"),
+                    )
+
+                console.print(event_table)
+
+            # Display notes
+            if log_entry.notes:
+                console.print("\n[bold]Notes[/bold]")
+                note_table = Table(show_header=True, header_style="cyan")
+                note_table.add_column("ID", style="cyan", width=10)
+                note_table.add_column("Title")
+
+                for note in log_entry.notes:
+                    note_table.add_row(
+                        str(note.id)[:8],
+                        note.title,
+                    )
+
+                console.print(note_table)
+
+            console.print()  # Empty line at the end
+            sys.exit(0)
+
+        finally:
+            try:
+                next(session_gen)
+            except StopIteration:
+                pass
+
+    except Exception as e:
+        console.print(f"✗ Error: {e}", style="red")
+        sys.exit(1)
 
 
 def main() -> None:

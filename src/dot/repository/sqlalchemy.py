@@ -5,9 +5,9 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from dot.domain.models import Event, Task, TaskStatus
-from dot.models import EventORM, TaskORM
-from dot.repository.abstract import EventRepository, TaskRepository
+from dot.domain.models import Event, Note, Task, TaskStatus
+from dot.models import EventORM, NoteORM, TaskORM
+from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
 
 
 class SQLAlchemyTaskRepository(TaskRepository):
@@ -221,4 +221,93 @@ class SQLAlchemyEventRepository(EventRepository):
             description=event_orm.description,
             occurred_at=event_orm.occurred_at,
             created_at=event_orm.created_at,
+        )
+
+
+class SQLAlchemyNoteRepository(NoteRepository):
+    """SQLAlchemy implementation of NoteRepository."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize the repository with a database session.
+
+        Args:
+            session: SQLAlchemy session
+        """
+        self._session = session
+
+    def add(self, note: Note) -> None:
+        """Add a new note."""
+        note_orm = self._to_orm(note)
+        self._session.add(note_orm)
+        self._session.commit()
+
+    def get(self, note_id: UUID) -> Note | None:
+        """Get a note by ID."""
+        note_orm = self._session.query(NoteORM).filter(NoteORM.id == note_id).first()
+        if note_orm is None:
+            return None
+        return self._to_domain(note_orm)
+
+    def list(self) -> list[Note]:
+        """List all notes, sorted by creation date (most recent first)."""
+        note_orms = (
+            self._session.query(NoteORM).order_by(NoteORM.created_at.desc()).all()
+        )
+        return [self._to_domain(note_orm) for note_orm in note_orms]
+
+    def list_by_date(self, target_date: date) -> list[Note]:
+        """List notes created on a specific date, sorted by creation time."""
+        from datetime import datetime, timedelta
+
+        start_of_day = datetime.combine(target_date, datetime.min.time())
+        end_of_day = start_of_day + timedelta(days=1)
+
+        note_orms = (
+            self._session.query(NoteORM)
+            .filter(NoteORM.created_at >= start_of_day)
+            .filter(NoteORM.created_at < end_of_day)
+            .order_by(NoteORM.created_at)
+            .all()
+        )
+        return [self._to_domain(note_orm) for note_orm in note_orms]
+
+    def delete(self, note_id: UUID) -> None:
+        """Delete a note."""
+        note_orm = self._session.query(NoteORM).filter(NoteORM.id == note_id).first()
+        if note_orm is not None:
+            self._session.delete(note_orm)
+            self._session.commit()
+
+    @staticmethod
+    def _to_orm(note: Note) -> NoteORM:
+        """Convert domain Note to ORM NoteORM.
+
+        Args:
+            note: Domain note
+
+        Returns:
+            ORM note
+        """
+        return NoteORM(
+            id=note.id,
+            title=note.title,
+            content=note.content,
+            created_at=note.created_at,
+        )
+
+    @staticmethod
+    def _to_domain(note_orm: NoteORM) -> Note:
+        """Convert ORM NoteORM to domain Note.
+
+        Args:
+            note_orm: ORM note
+
+        Returns:
+            Domain note
+        """
+        return Note(
+            id=note_orm.id,
+            title=note_orm.title,
+            content=note_orm.content,
+            created_at=note_orm.created_at,
         )

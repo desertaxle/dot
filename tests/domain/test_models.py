@@ -193,3 +193,200 @@ def test_event_immutability() -> None:
 
     with pytest.raises(AttributeError):
         event.title = "Changed"  # type: ignore
+
+
+# Note Model Tests
+
+
+def test_note_creation() -> None:
+    """Test creating a Note with all required fields."""
+    from dot.domain.models import Note
+
+    note_id = uuid4()
+    now = datetime.utcnow()
+
+    note = Note(
+        id=note_id,
+        title="Meeting Notes",
+        content="Discussed project timeline and deliverables",
+        created_at=now,
+    )
+
+    assert note.id == note_id
+    assert note.title == "Meeting Notes"
+    assert note.content == "Discussed project timeline and deliverables"
+    assert note.created_at == now
+
+
+def test_note_with_empty_content() -> None:
+    """Test creating a Note with empty content is allowed."""
+    from dot.domain.models import Note
+
+    note = Note(
+        id=uuid4(),
+        title="Empty Note",
+        content="",
+        created_at=datetime.utcnow(),
+    )
+
+    assert note.title == "Empty Note"
+    assert note.content == ""
+
+
+def test_note_immutability() -> None:
+    """Test that Note is immutable (frozen dataclass)."""
+    from dot.domain.models import Note
+
+    note = Note(
+        id=uuid4(),
+        title="Test note",
+        content="Test content",
+        created_at=datetime.utcnow(),
+    )
+
+    with pytest.raises(AttributeError):
+        note.title = "Changed"  # type: ignore
+
+
+# DailyLogEntry Model Tests
+
+
+def test_daily_log_entry_creation() -> None:
+    """Test creating a DailyLogEntry with all fields."""
+    from datetime import date
+
+    from dot.domain.models import DailyLogEntry, Event, Note
+
+    log_date = date(2025, 11, 17)
+    now = datetime.utcnow()
+
+    task = Task(
+        id=uuid4(),
+        title="Buy groceries",
+        description=None,
+        status=TaskStatus.TODO,
+        created_at=now,
+        updated_at=now,
+    )
+
+    event = Event(
+        id=uuid4(),
+        title="Team meeting",
+        description=None,
+        occurred_at=now,
+        created_at=now,
+    )
+
+    note = Note(
+        id=uuid4(),
+        title="Meeting notes",
+        content="Important discussion points",
+        created_at=now,
+    )
+
+    log_entry = DailyLogEntry(
+        date=log_date,
+        tasks=[task],
+        events=[event],
+        notes=[note],
+    )
+
+    assert log_entry.date == log_date
+    assert len(log_entry.tasks) == 1
+    assert log_entry.tasks[0] == task
+    assert len(log_entry.events) == 1
+    assert log_entry.events[0] == event
+    assert len(log_entry.notes) == 1
+    assert log_entry.notes[0] == note
+
+
+def test_daily_log_entry_empty() -> None:
+    """Test creating an empty DailyLogEntry."""
+    from datetime import date
+
+    from dot.domain.models import DailyLogEntry
+
+    log_date = date(2025, 11, 17)
+
+    log_entry = DailyLogEntry(
+        date=log_date,
+        tasks=[],
+        events=[],
+        notes=[],
+    )
+
+    assert log_entry.date == log_date
+    assert len(log_entry.tasks) == 0
+    assert len(log_entry.events) == 0
+    assert len(log_entry.notes) == 0
+
+
+def test_daily_log_entry_multiple_items() -> None:
+    """Test DailyLogEntry with multiple tasks, events, and notes."""
+    from datetime import date
+
+    from dot.domain.models import DailyLogEntry, Event, Note
+
+    log_date = date(2025, 11, 17)
+    now = datetime.utcnow()
+
+    tasks = [
+        Task(
+            id=uuid4(),
+            title=f"Task {i}",
+            description=None,
+            status=TaskStatus.TODO,
+            created_at=now,
+            updated_at=now,
+        )
+        for i in range(3)
+    ]
+
+    events = [
+        Event(
+            id=uuid4(),
+            title=f"Event {i}",
+            description=None,
+            occurred_at=now,
+            created_at=now,
+        )
+        for i in range(2)
+    ]
+
+    notes = [
+        Note(
+            id=uuid4(),
+            title=f"Note {i}",
+            content=f"Content {i}",
+            created_at=now,
+        )
+        for i in range(4)
+    ]
+
+    log_entry = DailyLogEntry(
+        date=log_date,
+        tasks=tasks,
+        events=events,
+        notes=notes,
+    )
+
+    assert len(log_entry.tasks) == 3
+    assert len(log_entry.events) == 2
+    assert len(log_entry.notes) == 4
+
+
+def test_daily_log_entry_immutability() -> None:
+    """Test that DailyLogEntry is immutable (frozen dataclass)."""
+    from datetime import date
+
+    from dot.domain.models import DailyLogEntry
+
+    log_entry = DailyLogEntry(
+        date=date(2025, 11, 17),
+        tasks=[],
+        events=[],
+        notes=[],
+    )
+
+    with pytest.raises(AttributeError):
+        log_entry.date = date(2025, 11, 18)  # type: ignore

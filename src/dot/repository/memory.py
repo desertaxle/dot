@@ -3,8 +3,8 @@
 from datetime import date
 from uuid import UUID
 
-from dot.domain.models import Event, Task, TaskStatus
-from dot.repository.abstract import EventRepository, TaskRepository
+from dot.domain.models import Event, Note, Task, TaskStatus
+from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
 
 
 class InMemoryTaskRepository(TaskRepository):
@@ -80,3 +80,34 @@ class InMemoryEventRepository(EventRepository):
     def delete(self, event_id: UUID) -> None:
         """Delete an event."""
         self._events.pop(event_id, None)
+
+
+class InMemoryNoteRepository(NoteRepository):
+    """In-memory implementation of NoteRepository for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the in-memory repository."""
+        self._notes: dict[UUID, Note] = {}
+
+    def add(self, note: Note) -> None:
+        """Add a new note."""
+        self._notes[note.id] = note
+
+    def get(self, note_id: UUID) -> Note | None:
+        """Get a note by ID."""
+        return self._notes.get(note_id)
+
+    def list(self) -> list[Note]:
+        """List all notes, sorted by creation date (most recent first)."""
+        return sorted(self._notes.values(), key=lambda n: n.created_at, reverse=True)
+
+    def list_by_date(self, date: date) -> list[Note]:
+        """List notes created on a specific date, sorted by creation time."""
+        notes = [
+            note for note in self._notes.values() if note.created_at.date() == date
+        ]
+        return sorted(notes, key=lambda n: n.created_at)
+
+    def delete(self, note_id: UUID) -> None:
+        """Delete a note."""
+        self._notes.pop(note_id, None)

@@ -1,10 +1,10 @@
 """Pure business logic functions for domain operations."""
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import date, datetime
 from uuid import uuid4
 
-from dot.domain.models import Event, Task, TaskStatus
+from dot.domain.models import DailyLogEntry, Event, Note, Task, TaskStatus
 
 
 def create_task(title: str, description: str | None = None) -> Task:
@@ -116,4 +116,72 @@ def create_event(
         description=description,
         occurred_at=occurred_at if occurred_at is not None else now,
         created_at=now,
+    )
+
+
+def create_note(title: str, content: str) -> "Note":
+    """Create a new note with validation.
+
+    Args:
+        title: Note title (required)
+        content: Note content (can be empty)
+
+    Returns:
+        New Note instance
+
+    Raises:
+        ValueError: If validation fails
+    """
+    from datetime import datetime
+    from uuid import uuid4
+
+    from dot.domain.models import Note
+
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("Title cannot be empty")
+
+    if len(title) > 500:
+        raise ValueError("Title cannot exceed 500 characters")
+
+    # Validate content length
+    if len(content) > 100000:
+        raise ValueError("Content cannot exceed 100000 characters")
+
+    now = datetime.utcnow()
+
+    return Note(
+        id=uuid4(),
+        title=title,
+        content=content,
+        created_at=now,
+    )
+
+
+def build_daily_log(
+    tasks: list[Task],
+    events: list[Event],
+    notes: list[Note],
+    target_date: date,
+) -> DailyLogEntry:
+    """Build a daily log entry for a specific date.
+
+    Args:
+        tasks: List of tasks to include (pre-filtered by the caller)
+        events: List of events to include (pre-filtered by the caller)
+        notes: List of notes to include (pre-filtered by the caller)
+        target_date: The date for this log entry
+
+    Returns:
+        A DailyLogEntry containing all provided items for the target date
+
+    Note:
+        This function does NOT filter by date - it assumes the caller has already
+        filtered the items appropriately. This keeps the domain logic pure.
+    """
+    return DailyLogEntry(
+        date=target_date,
+        tasks=tasks,
+        events=events,
+        notes=notes,
     )

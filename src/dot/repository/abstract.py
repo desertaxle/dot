@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import date
 from uuid import UUID
 
-from dot.domain.models import Event, Task, TaskStatus
+from dot.domain.models import Event, Note, Task, TaskStatus
 
 
 class TaskRepository(ABC):
@@ -138,5 +138,60 @@ class EventRepository(ABC):
 
         Args:
             event_id: The event ID to delete
+        """
+        pass
+
+
+class NoteRepository(ABC):
+    """Abstract interface for note repository implementations."""
+
+    @abstractmethod
+    def add(self, note: Note) -> None:
+        """Add a new note.
+
+        Args:
+            note: The note to add
+        """
+        pass
+
+    @abstractmethod
+    def get(self, note_id: UUID) -> Note | None:
+        """Get a note by ID.
+
+        Args:
+            note_id: The note ID
+
+        Returns:
+            The note if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    def list(self) -> list[Note]:
+        """List all notes.
+
+        Returns:
+            List of all notes
+        """
+        pass
+
+    @abstractmethod
+    def list_by_date(self, date: date) -> list[Note]:
+        """List notes created on a specific date.
+
+        Args:
+            date: The date to filter by
+
+        Returns:
+            List of notes created on the specified date
+        """
+        pass
+
+    @abstractmethod
+    def delete(self, note_id: UUID) -> None:
+        """Delete a note.
+
+        Args:
+            note_id: The note ID to delete
         """
         pass

@@ -1,7 +1,7 @@
 """Pure domain models for the bullet journal application."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from uuid import UUID
 
@@ -41,3 +41,29 @@ class Event:
     description: str | None
     occurred_at: datetime
     created_at: datetime
+
+
+@dataclass(frozen=True)
+class Note:
+    """A note in the bullet journal.
+
+    Notes are immutable and contain textual content for reference.
+    """
+
+    id: UUID
+    title: str
+    content: str
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class DailyLogEntry:
+    """A daily log entry aggregating all items for a specific date.
+
+    This is a read-only view model, not persisted to the database.
+    """
+
+    date: date
+    tasks: list[Task]
+    events: list[Event]
+    notes: list[Note]

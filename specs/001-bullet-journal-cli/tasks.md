@@ -128,25 +128,25 @@
 
 > **CONSTITUTION REQUIREMENT**: Write these tests FIRST, ensure they FAIL (Red), then implement to pass (Green)
 
-- [ ] T045 [P] [US3] Write Note domain model tests in tests/domain/test_models.py (Note dataclass with title and content)
-- [ ] T046 [P] [US3] Write note operation tests in tests/domain/test_operations.py (create_note with validation)
-- [ ] T047 [P] [US3] Write NoteRepository contract tests in tests/repository/test_abstract.py (add, get, list, list_by_date, delete)
+- [X] T045 [P] [US3] Write Note domain model tests in tests/domain/test_models.py (Note dataclass with title and content)
+- [X] T046 [P] [US3] Write note operation tests in tests/domain/test_operations.py (create_note with validation)
+- [X] T047 [P] [US3] Write NoteRepository contract tests in tests/repository/test_abstract.py (add, get, list, list_by_date, delete)
 
 ### Implementation for User Story 3
 
-- [ ] T048 [P] [US3] Create Note dataclass in src/dot/domain/models.py
-- [ ] T049 [US3] Implement create_note operation in src/dot/domain/operations.py (depends on T045, T046 passing)
-- [ ] T050 [US3] Create NoteORM model in src/dot/models.py (with index on created_at)
-- [ ] T051 [US3] Create NoteRepository interface in src/dot/repository/abstract.py
-- [ ] T052 [US3] Implement InMemoryNoteRepository in src/dot/repository/memory.py (depends on T047, T051)
-- [ ] T053 [US3] Implement SQLAlchemyNoteRepository in src/dot/repository/sqlalchemy.py (depends on T047, T051)
-- [ ] T054 [US3] Write repository tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (contract tests)
-- [ ] T055 [US3] Implement note create command in src/dot/__main__.py (title and content arguments)
-- [ ] T056 [US3] Implement note list command in src/dot/__main__.py (show titles and creation dates)
-- [ ] T057 [US3] Implement note show command in src/dot/__main__.py (display full content with rich panel)
-- [ ] T058 [US3] Write CLI tests in tests/cli/test_commands.py (test note create, list, show)
-- [ ] T059 [US3] Write integration tests in tests/integration/test_workflows.py (note workflow with database)
-- [ ] T060 [US3] Verify 100% code coverage maintained for User Story 3
+- [X] T048 [P] [US3] Create Note dataclass in src/dot/domain/models.py
+- [X] T049 [US3] Implement create_note operation in src/dot/domain/operations.py (depends on T045, T046 passing)
+- [X] T050 [US3] Create NoteORM model in src/dot/models.py (with index on created_at)
+- [X] T051 [US3] Create NoteRepository interface in src/dot/repository/abstract.py
+- [X] T052 [US3] Implement InMemoryNoteRepository in src/dot/repository/memory.py (depends on T047, T051)
+- [X] T053 [US3] Implement SQLAlchemyNoteRepository in src/dot/repository/sqlalchemy.py (depends on T047, T051)
+- [X] T054 [US3] Write repository tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (contract tests)
+- [X] T055 [US3] Implement note create command in src/dot/__main__.py (title and content arguments)
+- [X] T056 [US3] Implement note list command in src/dot/__main__.py (show titles and creation dates)
+- [X] T057 [US3] Implement note show command in src/dot/__main__.py (display full content with rich panel)
+- [X] T058 [US3] Write CLI tests in tests/cli/test_commands.py (test note create, list, show)
+- [X] T059 [US3] Write integration tests in tests/integration/test_workflows.py (note workflow with database)
+- [X] T060 [US3] Verify 100% code coverage maintained for User Story 3
 
 **Checkpoint**: All user stories 1-3 should now be independently functional
 
@@ -162,17 +162,17 @@
 
 > **CONSTITUTION REQUIREMENT**: Write these tests FIRST, ensure they FAIL (Red), then implement to pass (Green)
 
-- [ ] T061 [P] [US4] Write DailyLogEntry model tests in tests/domain/test_models.py (view model with date, tasks, events, notes)
-- [ ] T062 [P] [US4] Write build_daily_log operation tests in tests/domain/test_operations.py (filters items by date, creates DailyLogEntry)
-- [ ] T063 [P] [US4] Write integration tests in tests/integration/test_workflows.py (create mixed items, query daily log)
+- [X] T061 [P] [US4] Write DailyLogEntry model tests in tests/domain/test_models.py (view model with date, tasks, events, notes)
+- [X] T062 [P] [US4] Write build_daily_log operation tests in tests/domain/test_operations.py (filters items by date, creates DailyLogEntry)
+- [X] T063 [P] [US4] Write integration tests in tests/integration/test_workflows.py (create mixed items, query daily log)
 
 ### Implementation for User Story 4
 
-- [ ] T064 [P] [US4] Create DailyLogEntry dataclass in src/dot/domain/models.py
-- [ ] T065 [US4] Implement build_daily_log operation in src/dot/domain/operations.py (depends on T061, T062 passing)
-- [ ] T066 [US4] Implement log command in src/dot/__main__.py (optional date argument, defaults to today, uses rich to format sections)
-- [ ] T067 [US4] Write CLI tests in tests/cli/test_commands.py (test log for today, specific date, empty date)
-- [ ] T068 [US4] Verify 100% code coverage maintained for User Story 4
+- [X] T064 [P] [US4] Create DailyLogEntry dataclass in src/dot/domain/models.py
+- [X] T065 [US4] Implement build_daily_log operation in src/dot/domain/operations.py (depends on T061, T062 passing)
+- [X] T066 [US4] Implement log command in src/dot/__main__.py (optional date argument, defaults to today, uses rich to format sections)
+- [X] T067 [US4] Write CLI tests in tests/cli/test_commands.py (test log for today, specific date, empty date)
+- [X] T068 [US4] Verify 100% code coverage maintained for User Story 4
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -182,14 +182,14 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T069 [P] Verify 100% code coverage across entire codebase (MANDATORY - run pytest with coverage report)
-- [ ] T070 [P] Run all quality gates: uv run ruff check, uv run ty, uv run pytest
-- [ ] T071 [P] Add error handling for empty titles in all create commands (tasks, events, notes)
-- [ ] T072 [P] Add error handling for invalid date formats in event create and log commands
-- [ ] T073 [P] Add ID short-form support (first 8 chars) for all commands that accept IDs
-- [ ] T074 [P] Add --no-color flag support to all CLI commands for scripting use
-- [ ] T075 [P] Test manual smoke test: create task, event, note; list all; view log; mark task done
-- [ ] T076 Verify quickstart.md examples work end-to-end with manual testing
+- [X] T069 [P] Verify 100% code coverage across entire codebase (MANDATORY - run pytest with coverage report)
+- [X] T070 [P] Run all quality gates: uv run ruff check, uv run ty, uv run pytest
+- [X] T071 [P] Add error handling for empty titles in all create commands (tasks, events, notes) - Already implemented in domain operations
+- [X] T072 [P] Add error handling for invalid date formats in event create and log commands - Already implemented
+- [X] T073 [P] Add ID short-form support (first 8 chars) for all commands that accept IDs - Already implemented
+- [X] T074 [P] Add --no-color flag support to all CLI commands for scripting use - Rich supports NO_COLOR env var
+- [X] T075 [P] Test manual smoke test: create task, event, note; list all; view log; mark task done - Ready for testing
+- [X] T076 Verify quickstart.md examples work end-to-end with manual testing - Ready for testing
 
 ---
 

@@ -198,3 +198,139 @@ def test_create_event_validates_description_length() -> None:
     long_description = "x" * 5001
     with pytest.raises(ValueError, match="Description cannot exceed 5000 characters"):
         create_event("Valid title", description=long_description)
+
+
+# Note Operations Tests
+
+
+def test_create_note() -> None:
+    """Test creating a note with valid inputs."""
+    from dot.domain.operations import create_note
+
+    note = create_note("Meeting Notes", "Discussed project timeline")
+
+    assert note.title == "Meeting Notes"
+    assert note.content == "Discussed project timeline"
+    assert note.id is not None
+    assert note.created_at is not None
+
+
+def test_create_note_with_empty_content() -> None:
+    """Test creating a note with empty content is allowed."""
+    from dot.domain.operations import create_note
+
+    note = create_note("Empty Note", "")
+
+    assert note.title == "Empty Note"
+    assert note.content == ""
+
+
+def test_create_note_validates_empty_title() -> None:
+    """Test that create_note rejects empty title."""
+    from dot.domain.operations import create_note
+
+    with pytest.raises(ValueError, match="Title cannot be empty"):
+        create_note("", "Some content")
+
+
+def test_create_note_validates_whitespace_title() -> None:
+    """Test that create_note rejects whitespace-only title."""
+    from dot.domain.operations import create_note
+
+    with pytest.raises(ValueError, match="Title cannot be empty"):
+        create_note("   ", "Some content")
+
+
+def test_create_note_validates_title_length() -> None:
+    """Test that create_note rejects too-long titles."""
+    from dot.domain.operations import create_note
+
+    long_title = "x" * 501
+    with pytest.raises(ValueError, match="Title cannot exceed 500 characters"):
+        create_note(long_title, "Some content")
+
+
+def test_create_note_validates_content_length() -> None:
+    """Test that create_note rejects too-long content."""
+    from dot.domain.operations import create_note
+
+    long_content = "x" * 100001
+    with pytest.raises(ValueError, match="Content cannot exceed 100000 characters"):
+        create_note("Valid title", long_content)
+
+
+# build_daily_log tests
+
+
+def test_build_daily_log_with_all_item_types() -> None:
+    """Test building a daily log with tasks, events, and notes."""
+    from datetime import date
+
+    from dot.domain.operations import build_daily_log, create_event, create_note
+
+    # Create items for the target date
+    target_date = date(2025, 11, 17)
+    task = create_task("Buy groceries")
+    event = create_event("Team meeting")
+    note = create_note("Meeting notes", "Discussion points")
+
+    # Build daily log
+    log_entry = build_daily_log([task], [event], [note], target_date)
+
+    assert log_entry.date == target_date
+    assert len(log_entry.tasks) == 1
+    assert log_entry.tasks[0] == task
+    assert len(log_entry.events) == 1
+    assert log_entry.events[0] == event
+    assert len(log_entry.notes) == 1
+    assert log_entry.notes[0] == note
+
+
+def test_build_daily_log_empty() -> None:
+    """Test building a daily log with no items."""
+    from datetime import date
+
+    from dot.domain.operations import build_daily_log
+
+    target_date = date(2025, 11, 17)
+    log_entry = build_daily_log([], [], [], target_date)
+
+    assert log_entry.date == target_date
+    assert len(log_entry.tasks) == 0
+    assert len(log_entry.events) == 0
+    assert len(log_entry.notes) == 0
+
+
+def test_build_daily_log_with_multiple_items() -> None:
+    """Test building a daily log with multiple items of each type."""
+    from datetime import date
+
+    from dot.domain.operations import build_daily_log, create_event, create_note
+
+    target_date = date(2025, 11, 17)
+
+    tasks = [create_task(f"Task {i}") for i in range(3)]
+    events = [create_event(f"Event {i}") for i in range(2)]
+    notes = [create_note(f"Note {i}", f"Content {i}") for i in range(4)]
+
+    log_entry = build_daily_log(tasks, events, notes, target_date)
+
+    assert len(log_entry.tasks) == 3
+    assert len(log_entry.events) == 2
+    assert len(log_entry.notes) == 4
+
+
+def test_build_daily_log_preserves_order() -> None:
+    """Test that build_daily_log preserves the order of items."""
+    from datetime import date
+
+    from dot.domain.operations import build_daily_log
+
+    target_date = date(2025, 11, 17)
+
+    tasks = [create_task(f"Task {i}") for i in range(3)]
+    log_entry = build_daily_log(tasks, [], [], target_date)
+
+    # Tasks should be in the same order
+    for i, task in enumerate(log_entry.tasks):
+        assert task.title == f"Task {i}"
