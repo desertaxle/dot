@@ -16,3 +16,19 @@ wheels/
 .coverage
 .coverage.*
 htmlcov/
+
+# Environment variables
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+*.tmp
+*.swp

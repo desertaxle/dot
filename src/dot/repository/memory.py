@@ -1,0 +1,113 @@
+"""In-memory repository implementations for testing."""
+
+from datetime import date
+from uuid import UUID
+
+from dot.domain.models import Event, Note, Task, TaskStatus
+from dot.repository.abstract import EventRepository, NoteRepository, TaskRepository
+
+
+class InMemoryTaskRepository(TaskRepository):
+    """In-memory implementation of TaskRepository for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the in-memory repository."""
+        self._tasks: dict[UUID, Task] = {}
+
+    def add(self, task: Task) -> None:
+        """Add a new task."""
+        self._tasks[task.id] = task
+
+    def get(self, task_id: UUID) -> Task | None:
+        """Get a task by ID."""
+        return self._tasks.get(task_id)
+
+    def list(self, status: TaskStatus | None = None) -> list[Task]:
+        """List tasks, optionally filtered by status."""
+        if status is None:
+            return list(self._tasks.values())
+        return [task for task in self._tasks.values() if task.status == status]
+
+    def update(self, task: Task) -> None:
+        """Update an existing task."""
+        if task.id in self._tasks:
+            self._tasks[task.id] = task
+
+    def delete(self, task_id: UUID) -> None:
+        """Delete a task."""
+        self._tasks.pop(task_id, None)
+
+    def list_by_date(self, date: date) -> list[Task]:
+        """List tasks created on a specific date."""
+        return [task for task in self._tasks.values() if task.created_at.date() == date]
+
+
+class InMemoryEventRepository(EventRepository):
+    """In-memory implementation of EventRepository for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the in-memory repository."""
+        self._events: dict[UUID, Event] = {}
+
+    def add(self, event: Event) -> None:
+        """Add a new event."""
+        self._events[event.id] = event
+
+    def get(self, event_id: UUID) -> Event | None:
+        """Get an event by ID."""
+        return self._events.get(event_id)
+
+    def list(self) -> list[Event]:
+        """List all events, sorted chronologically by occurred_at."""
+        return sorted(self._events.values(), key=lambda e: e.occurred_at)
+
+    def list_by_date(self, date: date) -> list[Event]:
+        """List events that occurred on a specific date, sorted chronologically."""
+        events = [
+            event for event in self._events.values() if event.occurred_at.date() == date
+        ]
+        return sorted(events, key=lambda e: e.occurred_at)
+
+    def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
+        """List events within a date range (inclusive), sorted chronologically."""
+        events = [
+            event
+            for event in self._events.values()
+            if start_date <= event.occurred_at.date() <= end_date
+        ]
+        return sorted(events, key=lambda e: e.occurred_at)
+
+    def delete(self, event_id: UUID) -> None:
+        """Delete an event."""
+        self._events.pop(event_id, None)
+
+
+class InMemoryNoteRepository(NoteRepository):
+    """In-memory implementation of NoteRepository for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the in-memory repository."""
+        self._notes: dict[UUID, Note] = {}
+
+    def add(self, note: Note) -> None:
+        """Add a new note."""
+        self._notes[note.id] = note
+
+    def get(self, note_id: UUID) -> Note | None:
+        """Get a note by ID."""
+        return self._notes.get(note_id)
+
+    def list(self) -> list[Note]:
+        """List all notes, sorted by creation date (most recent first)."""
+        return sorted(self._notes.values(), key=lambda n: n.created_at, reverse=True)
+
+    def list_by_date(self, date: date) -> list[Note]:
+        """List notes created on a specific date, sorted by creation time."""
+        notes = [
+            note for note in self._notes.values() if note.created_at.date() == date
+        ]
+        return sorted(notes, key=lambda n: n.created_at)
+
+    def delete(self, note_id: UUID) -> None:
+        """Delete a note."""
+        self._notes.pop(note_id, None)
