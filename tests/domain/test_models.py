@@ -1,6 +1,6 @@
 """Tests for domain models."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -18,7 +18,7 @@ def test_task_status_enum_values() -> None:
 def test_task_creation() -> None:
     """Test creating a Task dataclass."""
     task_id = uuid4()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     task = Task(
         id=task_id,
@@ -44,8 +44,8 @@ def test_task_without_description() -> None:
         title="Quick task",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     assert task.description is None
@@ -58,8 +58,8 @@ def test_task_immutability() -> None:
         title="Test task",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     with pytest.raises(AttributeError):
@@ -69,7 +69,7 @@ def test_task_immutability() -> None:
 def test_task_with_different_statuses() -> None:
     """Test creating tasks with different statuses."""
     task_id = uuid4()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     todo_task = Task(
         id=task_id,
@@ -110,7 +110,7 @@ def test_event_creation() -> None:
     from dot.domain.models import Event
 
     event_id = uuid4()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     occurred = now - timedelta(hours=2)
 
     event = Event(
@@ -136,8 +136,8 @@ def test_event_without_description() -> None:
         id=uuid4(),
         title="Quick event",
         description=None,
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
 
     assert event.description is None
@@ -147,7 +147,7 @@ def test_event_occurred_in_past() -> None:
     """Test creating an Event that occurred in the past."""
     from dot.domain.models import Event
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     past = now - timedelta(days=7)
 
     event = Event(
@@ -165,7 +165,7 @@ def test_event_occurred_in_future() -> None:
     """Test creating an Event scheduled for the future."""
     from dot.domain.models import Event
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     future = now + timedelta(days=7)
 
     event = Event(
@@ -187,8 +187,8 @@ def test_event_immutability() -> None:
         id=uuid4(),
         title="Test event",
         description=None,
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
 
     with pytest.raises(AttributeError):
@@ -203,7 +203,7 @@ def test_note_creation() -> None:
     from dot.domain.models import Note
 
     note_id = uuid4()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     note = Note(
         id=note_id,
@@ -226,7 +226,7 @@ def test_note_with_empty_content() -> None:
         id=uuid4(),
         title="Empty Note",
         content="",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     assert note.title == "Empty Note"
@@ -241,7 +241,7 @@ def test_note_immutability() -> None:
         id=uuid4(),
         title="Test note",
         content="Test content",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     with pytest.raises(AttributeError):
@@ -258,7 +258,7 @@ def test_daily_log_entry_creation() -> None:
     from dot.domain.models import DailyLogEntry, Event, Note
 
     log_date = date(2025, 11, 17)
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     task = Task(
         id=uuid4(),
@@ -328,7 +328,7 @@ def test_daily_log_entry_multiple_items() -> None:
     from dot.domain.models import DailyLogEntry, Event, Note
 
     log_date = date(2025, 11, 17)
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     tasks = [
         Task(

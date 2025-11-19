@@ -42,6 +42,7 @@ def task_repository(request, tmp_path: Path):
         # Cleanup
         session.close()
         Base.metadata.drop_all(engine)
+        engine.dispose()
     else:  # pragma: no cover
         raise ValueError(f"Unknown repository type: {request.param}")
 
@@ -79,6 +80,7 @@ def event_repository(request, tmp_path: Path):
         # Cleanup
         session.close()
         Base.metadata.drop_all(engine)
+        engine.dispose()
     else:  # pragma: no cover
         raise ValueError(f"Unknown repository type: {request.param}")
 
@@ -116,5 +118,6 @@ def note_repository(request, tmp_path: Path):
         # Cleanup
         session.close()
         Base.metadata.drop_all(engine)
+        engine.dispose()
     else:  # pragma: no cover
         raise ValueError(f"Unknown repository type: {request.param}")

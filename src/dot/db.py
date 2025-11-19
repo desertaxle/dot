@@ -19,7 +19,12 @@ def get_engine(settings: Settings):
     """
     settings.ensure_dot_home_exists()
     database_url = f"sqlite:///{settings.db_path}"
-    return create_engine(database_url, echo=False)
+    return create_engine(
+        database_url,
+        echo=False,
+        pool_pre_ping=True,
+        connect_args={"check_same_thread": False},
+    )
 
 
 def get_session_factory(settings: Settings) -> sessionmaker[Session]:

@@ -185,9 +185,9 @@ def test_task_workflow_list_by_date(temp_db):
         repo.add(task2)
 
         # List by today's date (UTC, since create_task uses utcnow)
-        from datetime import datetime
+        from datetime import UTC, datetime
 
-        today_utc = datetime.utcnow().date()
+        today_utc = datetime.now(UTC).date()
         today_tasks = repo.list_by_date(today_utc)
 
         assert len(today_tasks) == 2
@@ -647,7 +647,7 @@ def test_note_workflow_delete(temp_db):
 
 def test_note_workflow_list_by_date(temp_db):
     """Test listing notes by creation date."""
-    from datetime import datetime, timedelta
+    from datetime import UTC, datetime, timedelta
 
     from dot.domain.operations import create_note
     from dot.repository.sqlalchemy import SQLAlchemyNoteRepository
@@ -665,7 +665,7 @@ def test_note_workflow_list_by_date(temp_db):
         repo.add(note2)
 
         # List by today's date (UTC)
-        today_utc = datetime.utcnow().date()
+        today_utc = datetime.now(UTC).date()
         today_notes = repo.list_by_date(today_utc)
 
         assert len(today_notes) == 2
@@ -746,7 +746,7 @@ def test_note_workflow_persistence(temp_db):
 
 def test_daily_log_workflow_with_mixed_items(temp_db):
     """Test creating mixed items and querying daily log."""
-    from datetime import datetime
+    from datetime import UTC, datetime
 
     from dot.domain.operations import (
         build_daily_log,
@@ -767,7 +767,7 @@ def test_daily_log_workflow_with_mixed_items(temp_db):
 
     # Create items
     task = create_task("Buy groceries", description="Milk and eggs")
-    event = create_event("Team meeting", occurred_at=datetime.utcnow())
+    event = create_event("Team meeting", occurred_at=datetime.now(UTC))
     note = create_note("Meeting notes", "Discussed project timeline")
 
     # Save to database
@@ -776,7 +776,7 @@ def test_daily_log_workflow_with_mixed_items(temp_db):
     note_repo.add(note)
 
     # Query items for today (use UTC date since our operations use utcnow())
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     tasks_today = task_repo.list_by_date(today)
     events_today = event_repo.list_by_date(today)
     notes_today = note_repo.list_by_date(today)
@@ -830,7 +830,7 @@ def test_daily_log_empty_date(temp_db):
 
 def test_daily_log_filters_by_date_correctly(temp_db):
     """Test that daily log only includes items from the specified date."""
-    from datetime import datetime, timedelta
+    from datetime import UTC, datetime, timedelta
     from uuid import uuid4
 
     from dot.domain.models import Event, Note, Task, TaskStatus
@@ -847,7 +847,7 @@ def test_daily_log_filters_by_date_correctly(temp_db):
     note_repo = SQLAlchemyNoteRepository(session)
 
     # Create items for today (use UTC date)
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(UTC)
     today = now_utc.date()
 
     # Create today's items with today's timestamps

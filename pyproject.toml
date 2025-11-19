@@ -44,15 +44,6 @@ omit = [
 precision = 2
 skip_covered = false
 fail_under = 100
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "@abstractmethod",
-]
 
 [tool.pytest.ini_options]
 addopts = "--cov=src/dot --cov-report=term-missing"

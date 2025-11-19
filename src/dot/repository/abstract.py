@@ -17,7 +17,7 @@ class TaskRepository(ABC):
         Args:
             task: The task to add
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get(self, task_id: UUID) -> Task | None:
@@ -29,7 +29,7 @@ class TaskRepository(ABC):
         Returns:
             The task if found, None otherwise
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list(self, status: TaskStatus | None = None) -> list[Task]:
@@ -41,7 +41,7 @@ class TaskRepository(ABC):
         Returns:
             List of tasks matching the criteria
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def update(self, task: Task) -> None:
@@ -50,7 +50,7 @@ class TaskRepository(ABC):
         Args:
             task: The updated task
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete(self, task_id: UUID) -> None:
@@ -59,7 +59,7 @@ class TaskRepository(ABC):
         Args:
             task_id: The task ID to delete
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list_by_date(self, date: date) -> list[Task]:
@@ -71,7 +71,7 @@ class TaskRepository(ABC):
         Returns:
             List of tasks created on the specified date
         """
-        pass
+        pass  # pragma: no cover
 
 
 class EventRepository(ABC):
@@ -84,7 +84,7 @@ class EventRepository(ABC):
         Args:
             event: The event to add
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get(self, event_id: UUID) -> Event | None:
@@ -96,7 +96,7 @@ class EventRepository(ABC):
         Returns:
             The event if found, None otherwise
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list(self) -> list[Event]:
@@ -105,7 +105,7 @@ class EventRepository(ABC):
         Returns:
             List of all events
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list_by_date(self, date: date) -> list[Event]:
@@ -117,7 +117,7 @@ class EventRepository(ABC):
         Returns:
             List of events that occurred on the specified date
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
@@ -130,7 +130,7 @@ class EventRepository(ABC):
         Returns:
             List of events that occurred within the date range
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete(self, event_id: UUID) -> None:
@@ -139,7 +139,7 @@ class EventRepository(ABC):
         Args:
             event_id: The event ID to delete
         """
-        pass
+        pass  # pragma: no cover
 
 
 class NoteRepository(ABC):
@@ -152,7 +152,7 @@ class NoteRepository(ABC):
         Args:
             note: The note to add
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get(self, note_id: UUID) -> Note | None:
@@ -164,7 +164,7 @@ class NoteRepository(ABC):
         Returns:
             The note if found, None otherwise
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list(self) -> list[Note]:
@@ -173,7 +173,7 @@ class NoteRepository(ABC):
         Returns:
             List of all notes
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def list_by_date(self, date: date) -> list[Note]:
@@ -185,7 +185,7 @@ class NoteRepository(ABC):
         Returns:
             List of notes created on the specified date
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete(self, note_id: UUID) -> None:
@@ -194,4 +194,4 @@ class NoteRepository(ABC):
         Args:
             note_id: The note ID to delete
         """
-        pass
+        pass  # pragma: no cover

@@ -1,7 +1,7 @@
 """CLI entry point for Dot bullet journal application."""
 
 import sys
-from datetime import date
+from datetime import UTC, date
 from uuid import UUID
 
 from cyclopts import App
@@ -648,10 +648,10 @@ def log(target_date: str | None = None) -> None:
                 )
                 sys.exit(1)
         else:
-            # Use UTC date to match how items are created (with datetime.utcnow())
+            # Use UTC date to match how items are created (with datetime.now(UTC))
             from datetime import datetime
 
-            log_date = datetime.utcnow().date()
+            log_date = datetime.now(UTC).date()
 
         # Get settings and initialize database
         settings = Settings()

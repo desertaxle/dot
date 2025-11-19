@@ -1,7 +1,7 @@
 """Pure business logic functions for domain operations."""
 
 from dataclasses import replace
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 from dot.domain.models import DailyLogEntry, Event, Note, Task, TaskStatus
@@ -31,7 +31,7 @@ def create_task(title: str, description: str | None = None) -> Task:
     if description is not None and len(description) > 5000:
         raise ValueError("Description cannot exceed 5000 characters")
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     return Task(
         id=uuid4(),
@@ -52,7 +52,7 @@ def mark_done(task: Task) -> Task:
     Returns:
         New Task instance with DONE status
     """
-    return replace(task, status=TaskStatus.DONE, updated_at=datetime.utcnow())
+    return replace(task, status=TaskStatus.DONE, updated_at=datetime.now(UTC))
 
 
 def mark_cancelled(task: Task) -> Task:
@@ -64,7 +64,7 @@ def mark_cancelled(task: Task) -> Task:
     Returns:
         New Task instance with CANCELLED status
     """
-    return replace(task, status=TaskStatus.CANCELLED, updated_at=datetime.utcnow())
+    return replace(task, status=TaskStatus.CANCELLED, updated_at=datetime.now(UTC))
 
 
 def reopen_task(task: Task) -> Task:
@@ -76,7 +76,7 @@ def reopen_task(task: Task) -> Task:
     Returns:
         New Task instance with TODO status
     """
-    return replace(task, status=TaskStatus.TODO, updated_at=datetime.utcnow())
+    return replace(task, status=TaskStatus.TODO, updated_at=datetime.now(UTC))
 
 
 def create_event(
@@ -108,7 +108,7 @@ def create_event(
     if description is not None and len(description) > 5000:
         raise ValueError("Description cannot exceed 5000 characters")
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     return Event(
         id=uuid4(),
@@ -148,7 +148,7 @@ def create_note(title: str, content: str) -> "Note":
     if len(content) > 100000:
         raise ValueError("Content cannot exceed 100000 characters")
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     return Note(
         id=uuid4(),

@@ -1,6 +1,6 @@
 """SQLAlchemy repository implementations."""
 
-from datetime import date
+from datetime import UTC, date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -89,8 +89,8 @@ class SQLAlchemyTaskRepository(TaskRepository):
             title=task.title,
             description=task.description,
             status=task.status.value,
-            created_at=task.created_at,
-            updated_at=task.updated_at,
+            created_at=task.created_at.replace(tzinfo=None),
+            updated_at=task.updated_at.replace(tzinfo=None),
         )
 
     @staticmethod
@@ -108,8 +108,8 @@ class SQLAlchemyTaskRepository(TaskRepository):
             title=task_orm.title,
             description=task_orm.description,
             status=TaskStatus(task_orm.status),
-            created_at=task_orm.created_at,
-            updated_at=task_orm.updated_at,
+            created_at=task_orm.created_at.replace(tzinfo=UTC),
+            updated_at=task_orm.updated_at.replace(tzinfo=UTC),
         )
 
 
@@ -201,8 +201,8 @@ class SQLAlchemyEventRepository(EventRepository):
             id=event.id,
             title=event.title,
             description=event.description,
-            occurred_at=event.occurred_at,
-            created_at=event.created_at,
+            occurred_at=event.occurred_at.replace(tzinfo=None),
+            created_at=event.created_at.replace(tzinfo=None),
         )
 
     @staticmethod
@@ -219,8 +219,8 @@ class SQLAlchemyEventRepository(EventRepository):
             id=event_orm.id,
             title=event_orm.title,
             description=event_orm.description,
-            occurred_at=event_orm.occurred_at,
-            created_at=event_orm.created_at,
+            occurred_at=event_orm.occurred_at.replace(tzinfo=UTC),
+            created_at=event_orm.created_at.replace(tzinfo=UTC),
         )
 
 
@@ -292,7 +292,7 @@ class SQLAlchemyNoteRepository(NoteRepository):
             id=note.id,
             title=note.title,
             content=note.content,
-            created_at=note.created_at,
+            created_at=note.created_at.replace(tzinfo=None),
         )
 
     @staticmethod
@@ -309,5 +309,5 @@ class SQLAlchemyNoteRepository(NoteRepository):
             id=note_orm.id,
             title=note_orm.title,
             content=note_orm.content,
-            created_at=note_orm.created_at,
+            created_at=note_orm.created_at.replace(tzinfo=UTC),
         )

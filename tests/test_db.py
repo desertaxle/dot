@@ -15,14 +15,17 @@ def test_get_engine_creates_database_file(tmp_path: Path) -> None:
 
     engine = get_engine(settings)
 
-    # Should be able to connect (this creates the database file)
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT 1"))
-        assert result.scalar() == 1
+    try:
+        # Should be able to connect (this creates the database file)
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            assert result.scalar() == 1
 
-    # Database file should now exist
-    assert settings.db_path.exists()
-    assert settings.db_path.is_file()
+        # Database file should now exist
+        assert settings.db_path.exists()
+        assert settings.db_path.is_file()
+    finally:
+        engine.dispose()
 
 
 def test_get_session_factory_creates_sessions(tmp_path: Path) -> None:
@@ -32,6 +35,7 @@ def test_get_session_factory_creates_sessions(tmp_path: Path) -> None:
 
     factory = get_session_factory(settings)
     session = factory()
+    engine = factory.kw["bind"]
 
     try:
         # Should be able to execute queries
@@ -39,6 +43,7 @@ def test_get_session_factory_creates_sessions(tmp_path: Path) -> None:
         assert result.scalar() == 1
     finally:
         session.close()
+        engine.dispose()
 
 
 def test_get_session_context_manager(tmp_path: Path) -> None:
@@ -46,28 +51,36 @@ def test_get_session_context_manager(tmp_path: Path) -> None:
     custom_home = tmp_path / "test_dot"
     settings = Settings(dot_home=custom_home)
 
-    # Use the generator as intended
-    gen = get_session(settings)
-    session = next(gen)
+    engine = get_engine(settings)
 
     try:
-        # Should be able to use the session
-        result = session.execute(text("SELECT 1"))
-        assert result.scalar() == 1
-    finally:
-        # Close the generator
+        # Use the generator as intended
+        gen = get_session(settings)
+        session = next(gen)
+
         try:
-            next(gen)
-        except StopIteration:
-            pass
+            # Should be able to use the session
+            result = session.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+        finally:
+            # Close the generator
+            try:
+                next(gen)
+            except StopIteration:
+                pass
+    finally:
+        engine.dispose()
 
 
 def test_multiple_sessions_same_database(tmp_path: Path) -> None:
     """Test that multiple sessions can access the same database."""
+    import gc
+
     custom_home = tmp_path / "test_dot"
     settings = Settings(dot_home=custom_home)
 
     factory = get_session_factory(settings)
+    engine = factory.kw["bind"]
 
     session1 = factory()
     session2 = factory()
@@ -81,3 +94,5 @@ def test_multiple_sessions_same_database(tmp_path: Path) -> None:
     finally:
         session1.close()
         session2.close()
+        engine.dispose()
+        gc.collect()  # Force garbage collection to clean up connections

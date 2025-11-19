@@ -4,7 +4,7 @@ These tests ensure that all repository implementations (in-memory, SQLAlchemy)
 behave identically according to the repository contract.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import uuid4
 
 
@@ -19,8 +19,8 @@ def test_task_repository_add_and_get(task_repository: TaskRepository) -> None:
         title="Test task",
         description="Test description",
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.add(task)
@@ -52,16 +52,16 @@ def test_task_repository_list_all(task_repository: TaskRepository) -> None:
         title="Task 1",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     task2 = Task(
         id=uuid4(),
         title="Task 2",
         description=None,
         status=TaskStatus.DONE,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.add(task1)
@@ -80,16 +80,16 @@ def test_task_repository_list_by_status(task_repository: TaskRepository) -> None
         title="TODO Task",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     done_task = Task(
         id=uuid4(),
         title="DONE Task",
         description=None,
         status=TaskStatus.DONE,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.add(todo_task)
@@ -111,8 +111,8 @@ def test_task_repository_update(task_repository: TaskRepository) -> None:
         title="Original",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.add(task)
@@ -123,7 +123,7 @@ def test_task_repository_update(task_repository: TaskRepository) -> None:
         description="New description",
         status=TaskStatus.DONE,
         created_at=task.created_at,
-        updated_at=datetime.utcnow(),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.update(updated_task)
@@ -142,8 +142,8 @@ def test_task_repository_delete(task_repository: TaskRepository) -> None:
         title="To Delete",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     task_repository.add(task)
@@ -156,7 +156,7 @@ def test_task_repository_delete(task_repository: TaskRepository) -> None:
 
 def test_task_repository_list_by_date(task_repository: TaskRepository) -> None:
     """Test listing tasks created on a specific date."""
-    today = datetime.utcnow()
+    today = datetime.now(UTC)
     yesterday = today - timedelta(days=1)
 
     task_today = Task(
@@ -202,8 +202,8 @@ def test_task_repository_update_nonexistent(task_repository: TaskRepository) -> 
         title="Nonexistent",
         description=None,
         status=TaskStatus.TODO,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
     # Update should not raise an error, just silently fail
@@ -237,8 +237,8 @@ def test_event_repository_add_and_get(event_repository) -> None:
         id=uuid4(),
         title="Team meeting",
         description="Discuss Q4 plans",
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
 
     event_repository.add(event)
@@ -270,15 +270,15 @@ def test_event_repository_list_all(event_repository) -> None:
         id=uuid4(),
         title="Event 1",
         description=None,
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
     event2 = Event(
         id=uuid4(),
         title="Event 2",
         description=None,
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
 
     event_repository.add(event1)
@@ -294,7 +294,7 @@ def test_event_repository_list_by_date(event_repository) -> None:
     """Test listing events that occurred on a specific date."""
     from dot.domain.models import Event
 
-    today = datetime.utcnow()
+    today = datetime.now(UTC)
     yesterday = today - timedelta(days=1)
 
     event_today = Event(
@@ -328,7 +328,7 @@ def test_event_repository_list_by_range(event_repository) -> None:
     """Test listing events within a date range."""
     from dot.domain.models import Event
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     day1 = now - timedelta(days=3)
     day2 = now - timedelta(days=2)
     day3 = now - timedelta(days=1)
@@ -374,8 +374,8 @@ def test_event_repository_delete(event_repository) -> None:
         id=uuid4(),
         title="To Delete",
         description=None,
-        occurred_at=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        occurred_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
 
     event_repository.add(event)
@@ -409,7 +409,7 @@ def test_note_repository_add_and_get(note_repository) -> None:
         id=uuid4(),
         title="Meeting Notes",
         content="Discussed project timeline and deliverables",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     note_repository.add(note)
@@ -442,13 +442,13 @@ def test_note_repository_list_all(note_repository) -> None:
         id=uuid4(),
         title="Note 1",
         content="Content 1",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
     note2 = Note(
         id=uuid4(),
         title="Note 2",
         content="Content 2",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     note_repository.add(note1)
@@ -465,7 +465,7 @@ def test_note_repository_list_by_date(note_repository) -> None:
     """Test listing notes created on a specific date."""
     from dot.domain.models import Note
 
-    today = datetime.utcnow()
+    today = datetime.now(UTC)
     yesterday = today - timedelta(days=1)
 
     note_today = Note(
@@ -501,7 +501,7 @@ def test_note_repository_delete(note_repository) -> None:
         id=uuid4(),
         title="To Delete",
         content="Content",
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     note_repository.add(note)
