@@ -63,7 +63,7 @@ def test_task_create_success(mock_settings, mock_session, mock_repository):
             task_app(["create", "Test Task"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once_with("Test Task", None)
         mock_repository.add.assert_called_once()
         mock_console.print.assert_any_call("✓ Task created: Test Task", style="green")
@@ -99,7 +99,7 @@ def test_task_create_with_description(mock_settings, mock_session, mock_reposito
             task_app(["create", "Test Task", "--description", "Test Description"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once_with("Test Task", "Test Description")
 
 
@@ -122,7 +122,7 @@ def test_task_create_validation_error(mock_settings):
             task_app(["create", ""])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Title cannot be empty", style="red"
         )
@@ -149,7 +149,7 @@ def test_task_list_empty(mock_settings, mock_session, mock_repository):
             task_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with("No tasks found.")
 
 
@@ -194,7 +194,7 @@ def test_task_list_with_tasks(mock_settings, mock_session, mock_repository):
             task_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_repository.list.assert_called_once_with(None)
 
 
@@ -237,7 +237,7 @@ def test_task_list_invalid_status(mock_settings):
             task_app(["list", "--status", "INVALID"])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Invalid status 'INVALID'. Must be TODO, DONE, or CANCELLED",
             style="red",
@@ -286,7 +286,7 @@ def test_task_done_success(mock_settings, mock_session, mock_repository):
             task_app(["done", task_id])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_repository.update.assert_called_once()
         mock_console.print.assert_called_with(
             "✓ Task marked as DONE: Test Task", style="green"
@@ -339,7 +339,7 @@ def test_task_done_with_short_id(mock_settings, mock_session, mock_repository):
             task_app(["done", short_id])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_repository.update.assert_called_once()
 
 
@@ -366,7 +366,7 @@ def test_task_done_not_found(mock_settings, mock_session, mock_repository):
             task_app(["done", "nonexist"])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Task not found: nonexist", style="red"
         )
@@ -414,7 +414,7 @@ def test_task_cancel_success(mock_settings, mock_session, mock_repository):
             task_app(["cancel", task_id])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_repository.update.assert_called_once()
         mock_console.print.assert_called_with(
             "✓ Task marked as CANCELLED: Test Task", style="green"
@@ -443,7 +443,7 @@ def test_task_cancel_not_found(mock_settings, mock_session, mock_repository):
             task_app(["cancel", "nonexist"])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Task not found: nonexist", style="red"
         )
@@ -497,7 +497,7 @@ def test_task_done_ambiguous_id(mock_settings, mock_session, mock_repository):
             task_app(["done", common_prefix])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         # Check that an ambiguous ID error was printed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Ambiguous ID" in str(call) for call in calls)
@@ -544,7 +544,7 @@ def test_event_create_success(mock_settings, mock_session):
             event_app(["create", "Team Meeting"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once()
         mock_event_repository.add.assert_called_once()
         mock_console.print.assert_any_call(
@@ -590,7 +590,7 @@ def test_event_create_with_description(mock_settings, mock_session):
             event_app(["create", "Team Meeting", "--description", "Discuss Q4 goals"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once()
 
 
@@ -632,7 +632,7 @@ def test_event_create_with_date(mock_settings, mock_session):
             event_app(["create", "Team Meeting", "--date", "2025-12-01"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once()
 
 
@@ -655,7 +655,7 @@ def test_event_create_validation_error(mock_settings):
             event_app(["create", ""])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Title cannot be empty", style="red"
         )
@@ -687,7 +687,7 @@ def test_event_list_empty(mock_settings, mock_session):
             event_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with("No events found.")
 
 
@@ -737,7 +737,7 @@ def test_event_list_with_events(mock_settings, mock_session):
             event_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_event_repository.list.assert_called_once()
 
 
@@ -814,7 +814,7 @@ def test_event_list_invalid_date_format(mock_settings):
             event_app(["list", "--date", "invalid-date"])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         # Check that an error was printed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Error" in str(call) for call in calls)
@@ -860,7 +860,7 @@ def test_note_create_success(mock_settings, mock_session):
             note_app(["create", "Meeting Notes", "Discussed project timeline"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_create.assert_called_once_with(
             "Meeting Notes", "Discussed project timeline"
         )
@@ -889,7 +889,7 @@ def test_note_create_validation_error(mock_settings):
             note_app(["create", "Title", ""])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Content cannot be empty", style="red"
         )
@@ -921,7 +921,7 @@ def test_note_list_empty(mock_settings, mock_session):
             note_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with("No notes found.")
 
 
@@ -969,7 +969,7 @@ def test_note_list_with_notes(mock_settings, mock_session):
             note_app(["list"])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_note_repository.list.assert_called_once()
 
 
@@ -1010,7 +1010,7 @@ def test_note_show_success(mock_settings, mock_session):
             note_app(["show", str(note_id)])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         mock_note_repository.get.assert_called_once_with(note_id)
         mock_console.print.assert_called_once()
 
@@ -1056,7 +1056,7 @@ def test_note_show_with_short_id(mock_settings, mock_session):
             note_app(["show", short_id])
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
 
 
 def test_note_show_not_found(mock_settings, mock_session):
@@ -1086,7 +1086,7 @@ def test_note_show_not_found(mock_settings, mock_session):
             note_app(["show", "nonexistent"])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         mock_console.print.assert_called_with(
             "✗ Error: Note not found: nonexistent", style="red"
         )
@@ -1142,7 +1142,7 @@ def test_note_show_ambiguous_id(mock_settings, mock_session):
             note_app(["show", common_prefix])
 
         # Assertions
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
         # Check that an ambiguous ID error was printed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Ambiguous ID" in str(call) for call in calls)
@@ -1204,7 +1204,7 @@ def test_log_for_today(
             log(None)
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         # Verify output contains daily log header
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("Daily Log" in str(call) for call in calls)
@@ -1256,7 +1256,7 @@ def test_log_for_specific_date(
             log("2025-11-17")
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         # Verify date is displayed
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("2025-11-17" in str(call) for call in calls)
@@ -1304,7 +1304,7 @@ def test_log_empty_date(
             log(None)
 
         # Assertions
-        assert exc_info.value.code == 0
+        assert exc_info.value.code == 0  # type: ignore[unresolved-attribute]
         # Verify message for no entries
         calls = [str(call) for call in mock_console.print.call_args_list]
         assert any("No entries for this date" in str(call) for call in calls)
@@ -1320,7 +1320,7 @@ def test_log_invalid_date_format(mock_console):
         log("invalid-date")
 
     # Assertions
-    assert exc_info.value.code == 1
+    assert exc_info.value.code == 1  # type: ignore[unresolved-attribute]
     # Check for error message
     calls = [str(call) for call in mock_console.print.call_args_list]
     assert any("Invalid date format" in str(call) for call in calls)
