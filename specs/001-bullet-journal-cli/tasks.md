@@ -95,21 +95,21 @@
 
 > **CONSTITUTION REQUIREMENT**: Write these tests FIRST, ensure they FAIL (Red), then implement to pass (Green)
 
-- [ ] T030 [P] [US2] Write Event domain model tests in tests/domain/test_models.py (Event dataclass, immutability, occurred_at field)
-- [ ] T031 [P] [US2] Write event operation tests in tests/domain/test_operations.py (create_event with optional occurred_at, defaults to now)
-- [ ] T032 [P] [US2] Write EventRepository contract tests in tests/repository/test_abstract.py (add, get, list, list_by_date, list_by_range, delete)
+- [X] T030 [P] [US2] Write Event domain model tests in tests/domain/test_models.py (Event dataclass, immutability, occurred_at field)
+- [X] T031 [P] [US2] Write event operation tests in tests/domain/test_operations.py (create_event with optional occurred_at, defaults to now)
+- [X] T032 [P] [US2] Write EventRepository contract tests in tests/repository/test_abstract.py (add, get, list, list_by_date, list_by_range, delete)
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Create Event dataclass in src/dot/domain/models.py
-- [ ] T034 [US2] Implement create_event operation in src/dot/domain/operations.py (depends on T030, T031 passing)
-- [ ] T035 [US2] Create EventORM model in src/dot/models.py (with index on occurred_at)
-- [ ] T036 [US2] Create EventRepository interface in src/dot/repository/abstract.py
-- [ ] T037 [US2] Implement InMemoryEventRepository in src/dot/repository/memory.py (depends on T032, T036)
-- [ ] T038 [US2] Implement SQLAlchemyEventRepository in src/dot/repository/sqlalchemy.py (depends on T032, T036)
-- [ ] T039 [US2] Write repository tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (contract tests)
-- [ ] T040 [US2] Implement event create command in src/dot/__main__.py (with --date option, defaults to now)
-- [ ] T041 [US2] Implement event list command in src/dot/__main__.py (with --date and --range options, chronological sorting)
+- [X] T033 [P] [US2] Create Event dataclass in src/dot/domain/models.py
+- [X] T034 [US2] Implement create_event operation in src/dot/domain/operations.py (depends on T030, T031 passing)
+- [X] T035 [US2] Create EventORM model in src/dot/models.py (with index on occurred_at)
+- [X] T036 [US2] Create EventRepository interface in src/dot/repository/abstract.py
+- [X] T037 [US2] Implement InMemoryEventRepository in src/dot/repository/memory.py (depends on T032, T036)
+- [X] T038 [US2] Implement SQLAlchemyEventRepository in src/dot/repository/sqlalchemy.py (depends on T032, T036)
+- [X] T039 [US2] Write repository tests in tests/repository/test_memory.py and tests/repository/test_sqlalchemy.py (contract tests)
+- [X] T040 [US2] Implement event create command in src/dot/__main__.py (with --date option, defaults to now)
+- [X] T041 [US2] Implement event list command in src/dot/__main__.py (with --date and --range options, chronological sorting)
 - [ ] T042 [US2] Write CLI tests in tests/cli/test_commands.py (test event create, list with filters)
 - [ ] T043 [US2] Write integration tests in tests/integration/test_workflows.py (event workflow with database)
 - [ ] T044 [US2] Verify 100% code coverage maintained for User Story 2

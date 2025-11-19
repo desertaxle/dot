@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import date
 from uuid import UUID
 
-from dot.domain.models import Task, TaskStatus
+from dot.domain.models import Event, Task, TaskStatus
 
 
 class TaskRepository(ABC):
@@ -70,5 +70,73 @@ class TaskRepository(ABC):
 
         Returns:
             List of tasks created on the specified date
+        """
+        pass
+
+
+class EventRepository(ABC):
+    """Abstract interface for event repository implementations."""
+
+    @abstractmethod
+    def add(self, event: Event) -> None:
+        """Add a new event.
+
+        Args:
+            event: The event to add
+        """
+        pass
+
+    @abstractmethod
+    def get(self, event_id: UUID) -> Event | None:
+        """Get an event by ID.
+
+        Args:
+            event_id: The event ID
+
+        Returns:
+            The event if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    def list(self) -> list[Event]:
+        """List all events.
+
+        Returns:
+            List of all events
+        """
+        pass
+
+    @abstractmethod
+    def list_by_date(self, date: date) -> list[Event]:
+        """List events that occurred on a specific date.
+
+        Args:
+            date: The date to filter by
+
+        Returns:
+            List of events that occurred on the specified date
+        """
+        pass
+
+    @abstractmethod
+    def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
+        """List events within a date range (inclusive).
+
+        Args:
+            start_date: Start of the date range
+            end_date: End of the date range
+
+        Returns:
+            List of events that occurred within the date range
+        """
+        pass
+
+    @abstractmethod
+    def delete(self, event_id: UUID) -> None:
+        """Delete an event.
+
+        Args:
+            event_id: The event ID to delete
         """
         pass

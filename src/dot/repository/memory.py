@@ -3,8 +3,8 @@
 from datetime import date
 from uuid import UUID
 
-from dot.domain.models import Task, TaskStatus
-from dot.repository.abstract import TaskRepository
+from dot.domain.models import Event, Task, TaskStatus
+from dot.repository.abstract import EventRepository, TaskRepository
 
 
 class InMemoryTaskRepository(TaskRepository):
@@ -40,3 +40,41 @@ class InMemoryTaskRepository(TaskRepository):
     def list_by_date(self, date: date) -> list[Task]:
         """List tasks created on a specific date."""
         return [task for task in self._tasks.values() if task.created_at.date() == date]
+
+
+class InMemoryEventRepository(EventRepository):
+    """In-memory implementation of EventRepository for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the in-memory repository."""
+        self._events: dict[UUID, Event] = {}
+
+    def add(self, event: Event) -> None:
+        """Add a new event."""
+        self._events[event.id] = event
+
+    def get(self, event_id: UUID) -> Event | None:
+        """Get an event by ID."""
+        return self._events.get(event_id)
+
+    def list(self) -> list[Event]:
+        """List all events."""
+        return list(self._events.values())
+
+    def list_by_date(self, date: date) -> list[Event]:
+        """List events that occurred on a specific date."""
+        return [
+            event for event in self._events.values() if event.occurred_at.date() == date
+        ]
+
+    def list_by_range(self, start_date: date, end_date: date) -> list[Event]:
+        """List events within a date range (inclusive)."""
+        return [
+            event
+            for event in self._events.values()
+            if start_date <= event.occurred_at.date() <= end_date
+        ]
+
+    def delete(self, event_id: UUID) -> None:
+        """Delete an event."""
+        self._events.pop(event_id, None)

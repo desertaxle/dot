@@ -130,3 +130,71 @@ def test_state_transitions() -> None:
     # CANCELLED -> TODO
     reopened_task = reopen_task(cancelled_task)
     assert reopened_task.status == TaskStatus.TODO
+
+
+# Event Operation Tests
+
+
+def test_create_event_with_title_only() -> None:
+    """Test creating an event with just a title."""
+    from dot.domain.operations import create_event
+
+    event = create_event("Team standup")
+
+    assert isinstance(event.id, UUID)
+    assert event.title == "Team standup"
+    assert event.description is None
+    assert isinstance(event.occurred_at, datetime)
+    assert isinstance(event.created_at, datetime)
+    # When no occurred_at is provided, it defaults to now (approximately)
+    assert abs((event.occurred_at - event.created_at).total_seconds()) < 1
+
+
+def test_create_event_with_description() -> None:
+    """Test creating an event with title and description."""
+    from dot.domain.operations import create_event
+
+    event = create_event("Team standup", description="Daily sync meeting")
+
+    assert event.title == "Team standup"
+    assert event.description == "Daily sync meeting"
+
+
+def test_create_event_with_custom_occurred_at() -> None:
+    """Test creating an event with a custom occurred_at timestamp."""
+    from dot.domain.operations import create_event
+
+    custom_time = datetime(2025, 11, 17, 14, 30)
+    event = create_event("Historical event", occurred_at=custom_time)
+
+    assert event.title == "Historical event"
+    assert event.occurred_at == custom_time
+
+
+def test_create_event_validates_empty_title() -> None:
+    """Test that create_event rejects empty titles."""
+    from dot.domain.operations import create_event
+
+    with pytest.raises(ValueError, match="Title cannot be empty"):
+        create_event("")
+
+    with pytest.raises(ValueError, match="Title cannot be empty"):
+        create_event("   ")
+
+
+def test_create_event_validates_title_length() -> None:
+    """Test that create_event rejects too-long titles."""
+    from dot.domain.operations import create_event
+
+    long_title = "x" * 501
+    with pytest.raises(ValueError, match="Title cannot exceed 500 characters"):
+        create_event(long_title)
+
+
+def test_create_event_validates_description_length() -> None:
+    """Test that create_event rejects too-long descriptions."""
+    from dot.domain.operations import create_event
+
+    long_description = "x" * 5001
+    with pytest.raises(ValueError, match="Description cannot exceed 5000 characters"):
+        create_event("Valid title", description=long_description)

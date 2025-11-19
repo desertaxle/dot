@@ -26,3 +26,15 @@ class TaskORM(Base):
     updated_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+
+class EventORM(Base):
+    """ORM model for Event."""
+
+    __tablename__ = "events"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(String(5000), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(index=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

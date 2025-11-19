@@ -27,3 +27,17 @@ class Task:
     status: TaskStatus
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass(frozen=True)
+class Event:
+    """An event in the bullet journal.
+
+    Events are immutable and represent things that happened or will happen.
+    """
+
+    id: UUID
+    title: str
+    description: str | None
+    occurred_at: datetime
+    created_at: datetime

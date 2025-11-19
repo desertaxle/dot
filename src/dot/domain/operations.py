@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import datetime
 from uuid import uuid4
 
-from dot.domain.models import Task, TaskStatus
+from dot.domain.models import Event, Task, TaskStatus
 
 
 def create_task(title: str, description: str | None = None) -> Task:
@@ -77,3 +77,43 @@ def reopen_task(task: Task) -> Task:
         New Task instance with TODO status
     """
     return replace(task, status=TaskStatus.TODO, updated_at=datetime.utcnow())
+
+
+def create_event(
+    title: str,
+    description: str | None = None,
+    occurred_at: datetime | None = None,
+) -> Event:
+    """Create a new event with validation.
+
+    Args:
+        title: Event title (required)
+        description: Optional detailed description
+        occurred_at: When the event occurred (defaults to now)
+
+    Returns:
+        New Event instance
+
+    Raises:
+        ValueError: If validation fails
+    """
+    # Validate title
+    if not title or not title.strip():
+        raise ValueError("Title cannot be empty")
+
+    if len(title) > 500:
+        raise ValueError("Title cannot exceed 500 characters")
+
+    # Validate description
+    if description is not None and len(description) > 5000:
+        raise ValueError("Description cannot exceed 5000 characters")
+
+    now = datetime.utcnow()
+
+    return Event(
+        id=uuid4(),
+        title=title,
+        description=description,
+        occurred_at=occurred_at if occurred_at is not None else now,
+        created_at=now,
+    )
